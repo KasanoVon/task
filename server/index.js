@@ -117,11 +117,11 @@ for (const sql of [
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
 
-// streaks は UNIQUE(user_id, streak_date) が必要なため作り直す
+// streaks は UNIQUE(user_id, streak_date) が必要なため、制約がなければ作り直す
 {
-  const cols = await client.execute('PRAGMA table_info(streaks)');
-  const hasUserId = cols.rows.some(r => String(r[1]) === 'user_id');
-  if (!hasUserId) {
+  const indexes = await client.execute('PRAGMA index_list(streaks)');
+  const hasUnique = indexes.rows.some(r => Number(r[2]) === 1);
+  if (!hasUnique) {
     await client.execute('DROP TABLE IF EXISTS streaks');
     await client.execute(`
       CREATE TABLE streaks (
@@ -132,7 +132,7 @@ for (const sql of [
         UNIQUE(user_id, streak_date)
       )
     `);
-    console.log('streaks テーブルを再作成しました');
+    console.log('streaks テーブルを再作成しました（UNIQUE制約を追加）');
   }
 }
 
