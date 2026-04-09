@@ -30,8 +30,9 @@ function AppMain() {
   const [screen, setScreen] = useState<Screen>('focus');
 
   useEffect(() => {
-    loadTasks();
-  }, [loadTasks]);
+    // タスク取得失敗（401・通信エラー等）時はログアウトしてログイン画面へ
+    loadTasks().catch(() => logout());
+  }, [loadTasks, logout]);
 
   if (!state.loaded) return <LoadingScreen />;
 
