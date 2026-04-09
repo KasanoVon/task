@@ -180,7 +180,6 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
       </div>
 
       {/* フォーカスカード */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       {currentTask ? (
         <div className={`focus-card${currentTask.type === 'timed' ? ' is-timed' : currentTask.type === 'repeat' ? ' is-repeat' : ''}`}>
           {currentTask.type === 'timed' && (
@@ -216,9 +215,7 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
         </div>
       )}
 
-      </div>
-
-      <div className="sub-row">
+      <div className="sub-row" style={{ marginTop: 'auto' }}>
         <button className="sub-btn" onClick={skipTask}>あとで ›</button>
         <button className="sub-btn" onClick={onShowList}>リスト ›</button>
         <button className="sub-btn" onClick={onShowCal}>カレンダー ›</button>
