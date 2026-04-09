@@ -266,11 +266,9 @@ export function CalendarScreen({ onShowFocus, onShowList }: Props) {
   }
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div className="topbar">
-        <button className="tb-btn btn-pu" onClick={onShowFocus}>‹ フォーカスへ</button>
-        <span className="tb-title">カレンダー</span>
-        <button className="tb-btn btn-te" onClick={onShowList}>リスト ›</button>
+        <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>カレンダー</span>
       </div>
 
       <div className="cal-view-tabs">

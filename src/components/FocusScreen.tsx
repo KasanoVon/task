@@ -223,18 +223,9 @@ export function FocusScreen({ username, onLogout, onShowList, onShowCal, onShowD
         </div>
       )}
 
-      <div className="sub-row" style={{ marginTop: 'auto' }}>
-        <button className="sub-btn" onClick={skipTask}>あとで</button>
-        <button className="sub-btn" onClick={onShowList}>リスト</button>
-        <button className="sub-btn" onClick={onShowCal}>カレンダー</button>
+      <div style={{ marginTop: 'auto', paddingBottom: '4px', display: 'flex', justifyContent: 'center' }}>
+        <button className="sub-btn" onClick={skipTask} style={{ fontSize: '12px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>このタスクをあとで ›</button>
       </div>
-
-      {/* 完了数バッジ */}
-      {completedLog.length > 0 && (
-        <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '11px', color: 'var(--t2)' }}>
-          本日完了: {completedLog.length}件
-        </div>
-      )}
     </div>
   );
 }

@@ -56,10 +56,9 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
   }
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div className="topbar">
-        <button className="tb-btn btn-pu" onClick={onShowFocus}>‹ フォーカスへ</button>
-        <span className="tb-title">まとめ</span>
+        <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>完了</span>
       </div>
 
       <div className="done-screen">
@@ -116,7 +115,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
           })}
         </div>
 
-        <div className="done-acts">
+        <div className="done-acts" style={{ marginTop: 'auto' }}>
           <button className="da-btn da-p" onClick={onShowFocus}>フォーカスに戻る</button>
           <button className="da-btn da-s" onClick={onShowList}>タスク一覧を見る</button>
           <button className="da-btn da-s" onClick={onShowCal}>カレンダーを見る</button>
