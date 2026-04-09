@@ -40,7 +40,7 @@ interface Props {
 
 type CalView = 'month' | 'week';
 
-export function CalendarScreen({ onShowFocus, onShowList }: Props) {
+export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowList }: Props) {
   const { state } = useTask();
   const { tasks } = state;
 

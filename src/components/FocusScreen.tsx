@@ -35,9 +35,9 @@ interface Props {
   onShowDone: () => void;
 }
 
-export function FocusScreen({ username, onLogout, onShowList, onShowCal, onShowDone }: Props) {
+export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
   const { state, completeTask, skipTask } = useTask();
-  const { tasks, completedLog } = state;
+  const { tasks } = state;
 
   const [clockStr, setClockStr] = useState(now());
   const [nextStr, setNextStr] = useState('次の予定：なし');
