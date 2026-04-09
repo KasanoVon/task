@@ -266,7 +266,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="topbar">
         <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>カレンダー</span>
       </div>

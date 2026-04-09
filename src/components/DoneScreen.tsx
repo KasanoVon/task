@@ -56,7 +56,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="topbar">
         <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>完了</span>
       </div>

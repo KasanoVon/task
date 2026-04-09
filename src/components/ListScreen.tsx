@@ -74,7 +74,7 @@ export function ListScreen({ onShowFocus }: Props) {
   const sorted = getSorted();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="topbar">
         <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>タスク</span>
         <button className="tb-btn btn-te" onClick={() => setFormOpen(true)}>＋ ついか</button>

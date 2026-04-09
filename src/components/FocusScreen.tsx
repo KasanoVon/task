@@ -124,7 +124,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const dateStr = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + days[d.getDay()] + '曜日';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="topbar">
         <span className="tb-title">{dateStr}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
