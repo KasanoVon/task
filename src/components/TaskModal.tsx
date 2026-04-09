@@ -92,11 +92,33 @@ export function TaskModal({ onClose, task }: Props) {
             <option value="hard">難しい</option>
           </select>
           <select value={cat} onChange={e => setCat(e.target.value)}>
-            <option>掃除</option>
-            <option>片付け</option>
-            <option>料理</option>
-            <option>健康</option>
-            <option>その他</option>
+            <optgroup label="生活">
+              <option>掃除</option>
+              <option>片付け</option>
+              <option>料理</option>
+            </optgroup>
+            <optgroup label="仕事">
+              <option>業務・タスク</option>
+            </optgroup>
+            <optgroup label="成長">
+              <option>勉強</option>
+              <option>資格</option>
+            </optgroup>
+            <optgroup label="健康">
+              <option>運動</option>
+              <option>体調管理</option>
+            </optgroup>
+            <optgroup label="趣味">
+              <option>遊び</option>
+              <option>娯楽</option>
+            </optgroup>
+            <optgroup label="お金">
+              <option>支出</option>
+              <option>投資</option>
+            </optgroup>
+            <optgroup label="その他">
+              <option>その他</option>
+            </optgroup>
           </select>
           <button
             type="button"
