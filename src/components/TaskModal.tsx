@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
+import type { Task } from '../types';
 
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
 
 interface Props {
   onClose: () => void;
+  task?: Task; // 既存タスクを渡すと編集モードになる
 }
 
 type TaskType = 'normal' | 'timed' | 'repeat';
@@ -15,25 +17,27 @@ function today() {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
-export function TaskModal({ onClose }: Props) {
-  const { addTask } = useTask();
-  const [name, setName] = useState('');
-  const [diff, setDiff] = useState('mid');
-  const [cat, setCat] = useState('その他');
-  const [dur, setDur] = useState('10分');
-  const [ftype, setFtype] = useState<TaskType>('normal');
+export function TaskModal({ onClose, task }: Props) {
+  const { addTask, updateTask } = useTask();
+  const isEdit = !!task;
+
+  const [name, setName] = useState(task?.name ?? '');
+  const [diff, setDiff] = useState(task?.diff ?? 'mid');
+  const [cat, setCat] = useState(task?.cat ?? 'その他');
+  const [dur, setDur] = useState(task?.dur ?? '10分');
+  const [ftype, setFtype] = useState<TaskType>((task?.type as TaskType) ?? 'normal');
 
   // timed
-  const [taskDate, setTaskDate] = useState(today());
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('10:00');
-  const [alertMin, setAlertMin] = useState(15);
+  const [taskDate, setTaskDate] = useState(task?.task_date ?? today());
+  const [startTime, setStartTime] = useState(task?.start_time ?? '09:00');
+  const [endTime, setEndTime] = useState(task?.end_time ?? '10:00');
+  const [alertMin, setAlertMin] = useState(task?.alert_min ?? 15);
 
   // repeat
-  const [runit, setRunit] = useState('day');
-  const [rnum, setRnum] = useState(1);
-  const [rtime, setRtime] = useState('08:00');
-  const [wdays, setWdays] = useState<number[]>([]);
+  const [runit, setRunit] = useState(task?.runit ?? 'day');
+  const [rnum, setRnum] = useState(task?.rnum ?? 1);
+  const [rtime, setRtime] = useState(task?.rtime ?? '08:00');
+  const [wdays, setWdays] = useState<number[]>(task?.wdays ?? []);
 
   const RUNIT_JP: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
 
@@ -44,7 +48,7 @@ export function TaskModal({ onClose }: Props) {
   async function handleSave() {
     if (!name.trim()) return;
     const base = { name: name.trim(), diff, cat, dur };
-    let body = {};
+    let body: Partial<Task> = {};
     if (ftype === 'timed') {
       body = { ...base, type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
     } else if (ftype === 'repeat') {
@@ -52,7 +56,11 @@ export function TaskModal({ onClose }: Props) {
     } else {
       body = { ...base, type: 'normal' };
     }
-    await addTask(body);
+    if (isEdit) {
+      await updateTask(task!.id, body);
+    } else {
+      await addTask(body);
+    }
     onClose();
   }
 
@@ -167,9 +175,32 @@ export function TaskModal({ onClose }: Props) {
           </div>
         )}
 
+        {/* 通常タスクの日付指定 */}
+        {ftype === 'normal' && (
+          <div className="ef open">
+            <span className="flbl">実施日（任意）</span>
+            <div className="frow">
+              <input
+                type="date"
+                value={taskDate}
+                onChange={e => setTaskDate(e.target.value)}
+              />
+              {taskDate && (
+                <button
+                  type="button"
+                  style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer' }}
+                  onClick={() => setTaskDate('')}
+                >
+                  クリア
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="fbtns">
           <button className="fcancel" onClick={onClose}>キャンセル</button>
-          <button className="fsave" onClick={handleSave}>追加する</button>
+          <button className="fsave" onClick={handleSave}>{isEdit ? '保存する' : '追加する'}</button>
         </div>
       </div>
     </div>

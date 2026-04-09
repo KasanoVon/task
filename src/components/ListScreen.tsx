@@ -22,6 +22,7 @@ export function ListScreen({ onShowFocus }: Props) {
   const { tasks } = state;
   const [sortMode, setSortMode] = useState<SortMode>('manual');
   const [formOpen, setFormOpen] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
   const dragSrc = useRef<number | null>(null);
 
   function getSorted() {
@@ -68,6 +69,7 @@ export function ListScreen({ onShowFocus }: Props) {
       </div>
 
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}
+      {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
 
       <div className="sort-tabs">
         {(['manual', 'deadline', 'diff', 'time', 'cat'] as SortMode[]).map(m => (
@@ -116,6 +118,11 @@ export function ListScreen({ onShowFocus }: Props) {
               </div>
             </div>
             <div className="ti-acts">
+              <button className="ab edt" onClick={() => setEditTask(t)}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+                </svg>
+              </button>
               <button
                 className={`ab ck${t.done ? ' on' : ''}`}
                 onClick={() => toggleDone(t)}
