@@ -42,7 +42,7 @@ function AppMain() {
       {/* エラートースト */}
       <div className="err-toast" id="err-toast" />
 
-      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {screen === 'focus' && (
           <FocusScreen
             username={authState.currentUser?.username ?? ''}
