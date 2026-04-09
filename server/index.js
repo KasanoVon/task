@@ -104,6 +104,28 @@ await client.executeMultiple(`
   );
 `);
 
+// sessions テーブルのマイグレーション（user_id カラムがない古いスキーマを修正）
+{
+  const cols = await client.execute('PRAGMA table_info(sessions)');
+  const hasUserId = cols.rows.some(r => r.name === 'user_id');
+  if (!hasUserId) {
+    // 古いセッションをすべて破棄してテーブルを作り直す
+    await client.execute('DROP TABLE IF EXISTS sessions');
+    await client.execute(`
+      CREATE TABLE sessions (
+        token        TEXT    PRIMARY KEY,
+        user_id      TEXT    NOT NULL,
+        expires_at   INTEGER NOT NULL,
+        created_at   TEXT    NOT NULL,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    await client.execute('CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)');
+    await client.execute('CREATE INDEX IF NOT EXISTS idx_sessions_expires_at ON sessions(expires_at)');
+    console.log('sessions テーブルをマイグレーションしました');
+  }
+}
+
 const isProd = process.env.NODE_ENV === 'production';
 
 const app = express();
