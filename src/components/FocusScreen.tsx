@@ -6,7 +6,7 @@ const RUNIT_JP: Record<string, string> = { hour: '時間', day: '日', week: '�
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
-function now() { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function now() { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
 function today() {
   const d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -97,7 +97,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     };
 
     tick();
-    const id = setInterval(tick, 10000);
+    const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [tasks]);
 
