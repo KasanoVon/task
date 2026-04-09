@@ -28,12 +28,14 @@ function rLabel(t: Task) {
 }
 
 interface Props {
+  username: string;
+  onLogout: () => void;
   onShowList: () => void;
   onShowCal: () => void;
   onShowDone: () => void;
 }
 
-export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
+export function FocusScreen({ username, onLogout, onShowList, onShowCal, onShowDone }: Props) {
   const { state, completeTask, skipTask } = useTask();
   const { tasks, completedLog } = state;
 
@@ -125,7 +127,13 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div className="topbar">
         <span className="tb-title">{dateStr}</span>
-        <button className="tb-btn btn-te" onClick={onShowList}>リスト ›</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'var(--t2)' }}>{username}</span>
+          <button
+            style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: '0.5px solid var(--bd2)', background: 'none', color: 'var(--t3)', cursor: 'pointer' }}
+            onClick={onLogout}
+          >ログアウト</button>
+        </div>
       </div>
 
       <div className="clock-bar">
@@ -216,9 +224,9 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
       )}
 
       <div className="sub-row" style={{ marginTop: 'auto' }}>
-        <button className="sub-btn" onClick={skipTask}>あとで ›</button>
-        <button className="sub-btn" onClick={onShowList}>リスト ›</button>
-        <button className="sub-btn" onClick={onShowCal}>カレンダー ›</button>
+        <button className="sub-btn" onClick={skipTask}>あとで</button>
+        <button className="sub-btn" onClick={onShowList}>リスト</button>
+        <button className="sub-btn" onClick={onShowCal}>カレンダー</button>
       </div>
 
       {/* 完了数バッジ */}

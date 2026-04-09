@@ -20,8 +20,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .btn-te{background:var(--te-l);color:var(--te-d);}
 
 /* clock */
-.clock-bar{background:var(--card);border:0.5px solid var(--bd);border-radius:12px;padding:9px 14px;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.clock-time{font-size:16px;font-weight:600;color:var(--t);font-variant-numeric:tabular-nums;}
+.clock-bar{padding:8px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.clock-time{font-size:28px;font-weight:700;color:var(--t);font-variant-numeric:tabular-nums;}
 .clock-next{font-size:11px;color:var(--t2);}
 
 /* interrupt */
@@ -48,13 +48,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .prog-txt{font-size:12px;color:var(--t2);min-width:36px;text-align:right;}
 
 /* focus card */
-.focus-card{background:var(--card);border:0.5px solid var(--bd);border-radius:18px;padding:28px 22px 22px;margin-bottom:14px;text-align:center;position:relative;overflow:hidden;}
+.focus-card{background:var(--card);border:0.5px solid var(--bd);border-radius:18px;padding:28px 22px 22px;margin-bottom:14px;text-align:left;position:relative;overflow:hidden;}
 .focus-card.is-timed{border-left:3px solid var(--co);}
 .focus-card.is-repeat{border-left:3px solid var(--pu);}
 .dl-ribbon{position:absolute;top:0;left:0;right:0;background:var(--re-l);color:var(--re-d);font-size:11px;font-weight:600;padding:5px;text-align:center;}
 .f-hint{font-size:11px;color:var(--t2);margin-bottom:8px;}
-.f-name{font-size:21px;font-weight:600;color:var(--t);line-height:1.4;margin-bottom:10px;}
-.f-pills{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;}
+.f-name{font-size:26px;font-weight:700;color:var(--t);line-height:1.3;margin-bottom:8px;}
+.f-pills{display:flex;gap:6px;justify-content:flex-start;flex-wrap:wrap;margin-bottom:20px;}
 .pill{font-size:11px;padding:0;}
 .p-time{color:var(--t2);}
 .p-cat{color:var(--t2);}
@@ -62,8 +62,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .p-rep{color:var(--t2);}
 .done-btn{width:100%;padding:15px;background:var(--pu);color:#fff;border:none;border-radius:14px;font-size:16px;font-weight:600;cursor:pointer;transition:transform .1s,background .2s;}
 .done-btn:active{transform:scale(.97);}
-.sub-row{display:flex;justify-content:center;gap:18px;margin-top:10px;}
-.sub-btn{font-size:12px;color:var(--t2);background:none;border:none;cursor:pointer;padding:4px 8px;}
+.sub-row{display:flex;justify-content:space-around;gap:0;margin-top:auto;padding:6px 0 0;}
+
+/* ボトムタブバー */
+.tab-bar{display:flex;justify-content:space-around;align-items:center;padding:10px 0 20px;border-top:1px solid var(--bd);margin:0 -14px;background:var(--bg);}
+.tab-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 16px;background:none;border:none;cursor:pointer;min-width:60px;}
+.tab-item svg{opacity:.4;}
+.tab-item span{font-size:9px;color:var(--t2);}
+.tab-item.active svg{opacity:1;}
+.tab-item.active span{color:var(--t);font-weight:600;}
 
 /* burst */
 .burst{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}

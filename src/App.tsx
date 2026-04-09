@@ -7,6 +7,7 @@ import { FocusScreen } from './components/FocusScreen';
 import { ListScreen } from './components/ListScreen';
 import { CalendarScreen } from './components/CalendarScreen';
 import { DoneScreen } from './components/DoneScreen';
+import { TabBar } from './components/TabBar';
 import './styles/main.css';
 
 // ローディング画面
@@ -41,21 +42,10 @@ function AppMain() {
       {/* エラートースト */}
       <div className="err-toast" id="err-toast" />
 
-      {/* ヘッダー: ユーザー名・ログアウト */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '4px' }}>
-        <span style={{ fontSize: '11px', color: 'var(--t2)', marginRight: '8px', alignSelf: 'center' }}>
-          {authState.currentUser?.username}
-        </span>
-        <button
-          style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: '0.5px solid var(--bd2)', background: 'none', color: 'var(--t3)', cursor: 'pointer' }}
-          onClick={logout}
-        >
-          ログアウト
-        </button>
-      </div>
-
       {screen === 'focus' && (
         <FocusScreen
+          username={authState.currentUser?.username ?? ''}
+          onLogout={logout}
           onShowList={() => setScreen('list')}
           onShowCal={() => setScreen('cal')}
           onShowDone={() => setScreen('done')}
@@ -77,6 +67,14 @@ function AppMain() {
           onShowCal={() => setScreen('cal')}
         />
       )}
+
+      <TabBar
+        active={screen}
+        onFocus={() => setScreen('focus')}
+        onList={() => setScreen('list')}
+        onCal={() => setScreen('cal')}
+        onDone={() => setScreen('done')}
+      />
     </div>
   );
 }

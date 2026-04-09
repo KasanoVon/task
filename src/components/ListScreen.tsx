@@ -74,10 +74,9 @@ export function ListScreen({ onShowFocus }: Props) {
   const sorted = getSorted();
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div className="topbar">
-        <button className="tb-btn btn-pu" onClick={onShowFocus}>‹ フォーカスへ</button>
-        <span className="tb-title">タスク一覧</span>
+        <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>タスク</span>
         <button className="tb-btn btn-te" onClick={() => setFormOpen(true)}>＋ ついか</button>
       </div>
 
@@ -154,7 +153,9 @@ export function ListScreen({ onShowFocus }: Props) {
         ))}
       </div>
 
-      <button className="start-btn" onClick={onShowFocus}>このじゅんばんでスタート ›</button>
+      <div style={{ marginTop: 'auto', paddingTop: '14px' }}>
+        <button className="start-btn" onClick={onShowFocus}>このじゅんばんでスタート →</button>
+      </div>
     </div>
   );
 }
