@@ -51,6 +51,17 @@ app.post('/api/tasks', async (c) => {
   return c.json(parseTask(rows[0]), 201)
 })
 
+// PATCH /api/tasks/reorder  並べ替え（idの配列を受け取る）
+app.patch('/api/tasks/reorder', async (c) => {
+  const { ids } = await c.req.json()
+  const stmts = ids.map((id, i) => ({
+    sql: 'UPDATE tasks SET sort_order = ? WHERE id = ?',
+    args: [i, id],
+  }))
+  await db.batch(stmts)
+  return c.json({ ok: true })
+})
+
 // PATCH /api/tasks/:id  更新（完了トグル・内容変更）
 app.patch('/api/tasks/:id', async (c) => {
   const id = Number(c.req.param('id'))
@@ -82,17 +93,6 @@ app.patch('/api/tasks/:id', async (c) => {
 app.delete('/api/tasks/:id', async (c) => {
   const id = Number(c.req.param('id'))
   await db.execute({ sql: 'DELETE FROM tasks WHERE id = ?', args: [id] })
-  return c.json({ ok: true })
-})
-
-// PATCH /api/tasks/reorder  並べ替え（idの配列を受け取る）
-app.patch('/api/tasks/reorder', async (c) => {
-  const { ids } = await c.req.json()
-  const stmts = ids.map((id, i) => ({
-    sql: 'UPDATE tasks SET sort_order = ? WHERE id = ?',
-    args: [i, id],
-  }))
-  await db.batch(stmts)
   return c.json({ ok: true })
 })
 
