@@ -105,8 +105,11 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
       }));
     }
 
-    await completeTask(currentTask);
-    setTimeout(() => setCompleting(false), 600);
+    try {
+      await completeTask(currentTask);
+    } finally {
+      setCompleting(false);
+    }
   }
 
   function doInt(_task: Task, which: 'u' | 'r') {
