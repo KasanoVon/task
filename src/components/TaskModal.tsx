@@ -22,7 +22,7 @@ export function TaskModal({ onClose, task }: Props) {
   const isEdit = !!task;
 
   const [name, setName] = useState(task?.name ?? '');
-  const [diff, setDiff] = useState(task?.diff ?? 'mid');
+  const [diff, setDiff] = useState<'easy' | 'mid' | 'hard'>(task?.diff ?? 'mid');
   const [cat, setCat] = useState(task?.cat ?? 'その他');
   const [dur, setDur] = useState(task?.dur ?? '10分');
   const [ftype, setFtype] = useState<TaskType>((task?.type as TaskType) ?? 'normal');
@@ -76,7 +76,7 @@ export function TaskModal({ onClose, task }: Props) {
           autoFocus
         />
         <div className="frow">
-          <select value={diff} onChange={e => setDiff(e.target.value)}>
+          <select value={diff} onChange={e => setDiff(e.target.value as 'easy' | 'mid' | 'hard')}>
             <option value="easy">かんたん</option>
             <option value="mid">ふつう</option>
             <option value="hard">むずかしい</option>
