@@ -50,11 +50,10 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const popRef = useRef<HTMLDivElement>(null);
 
   const todayStr = today();
-  // 今日のタスク：通常タスク＋今日期限のtimedタスク
+  // 今日のタスク：通常タスク＋今日期限のtimedタスク（定期タスクは除外）
   const todayTasks = tasks.filter(t =>
     t.type === 'normal' ||
-    (t.type === 'timed' && t.task_date === todayStr) ||
-    t.type === 'repeat'
+    (t.type === 'timed' && t.task_date === todayStr)
   );
   const doneN = todayTasks.filter(t => t.done).length;
   const totalN = todayTasks.length;
