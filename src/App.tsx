@@ -42,38 +42,39 @@ function AppMain() {
       {/* エラートースト */}
       <div className="err-toast" id="err-toast" />
 
-      {screen === 'focus' && (
-        <FocusScreen
-          username={authState.currentUser?.username ?? ''}
-          onLogout={logout}
-          onShowList={() => setScreen('list')}
-          onShowCal={() => setScreen('cal')}
-          onShowDone={() => setScreen('done')}
-        />
-      )}
-      {screen === 'list' && (
-        <ListScreen onShowFocus={() => setScreen('focus')} />
-      )}
-      {screen === 'cal' && (
-        <CalendarScreen
-          onShowFocus={() => setScreen('focus')}
-          onShowList={() => setScreen('list')}
-        />
-      )}
-      {screen === 'done' && (
-        <DoneScreen
-          onShowFocus={() => setScreen('focus')}
-          onShowList={() => setScreen('list')}
-          onShowCal={() => setScreen('cal')}
-        />
-      )}
+      <div style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
+        {screen === 'focus' && (
+          <FocusScreen
+            username={authState.currentUser?.username ?? ''}
+            onLogout={logout}
+            onShowList={() => setScreen('list')}
+            onShowCal={() => setScreen('cal')}
+            onShowDone={() => setScreen('done')}
+          />
+        )}
+        {screen === 'list' && (
+          <ListScreen onShowFocus={() => setScreen('focus')} />
+        )}
+        {screen === 'cal' && (
+          <CalendarScreen
+            onShowFocus={() => setScreen('focus')}
+            onShowList={() => setScreen('list')}
+          />
+        )}
+        {screen === 'done' && (
+          <DoneScreen
+            onShowFocus={() => setScreen('focus')}
+            onShowList={() => setScreen('list')}
+            onShowCal={() => setScreen('cal')}
+          />
+        )}
+      </div>
 
       <TabBar
         active={screen}
         onFocus={() => setScreen('focus')}
         onList={() => setScreen('list')}
         onCal={() => setScreen('cal')}
-        onDone={() => setScreen('done')}
       />
     </div>
   );
