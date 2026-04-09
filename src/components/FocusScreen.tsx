@@ -141,8 +141,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const dateStr = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + days[d.getDay()] + '曜日';
 
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="topbar topbar-accent">
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: 0 }}>
+      <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
         <span className="tb-title tb-title-accent">{dateStr}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
@@ -152,6 +152,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           >ログアウト</button>
         </div>
       </div>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
 
       <div className="clock-bar">
         <span className="clock-time">{clockStr}</span>
@@ -242,6 +243,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
 
       <div style={{ marginTop: 'auto', paddingBottom: '4px', display: 'flex', justifyContent: 'center' }}>
         <button className="sub-btn" onClick={skipTask} style={{ fontSize: '12px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>このタスクを後で ›</button>
+      </div>
       </div>
     </div>
   );

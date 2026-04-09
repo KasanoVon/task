@@ -14,7 +14,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 
 /* topbar */
 .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.topbar-accent{background:var(--pu);margin:-18px -14px 14px;padding:12px 14px;}
+.topbar-accent{background:var(--pu);margin:0;padding:12px 14px;}
 .tb-title{font-size:15px;font-weight:600;color:var(--t);}
 .tb-title-accent{color:#fff;font-size:15px;font-weight:600;}
 .tb-btn{font-size:12px;padding:5px 13px;border-radius:999px;border:none;cursor:pointer;font-weight:600;}
