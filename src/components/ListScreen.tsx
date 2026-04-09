@@ -84,7 +84,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const sorted = getSorted();
 
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
       <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -96,7 +96,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}
       {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
       <div className="sort-tabs" style={{ display: 'flex', alignItems: 'center' }}>
         {(['manual', 'deadline', 'diff', 'time', 'cat'] as SortMode[]).map(m => (
           <button

@@ -152,7 +152,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           >ログアウト</button>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
 
       <div className="clock-bar">
         <span className="clock-time">{clockStr}</span>

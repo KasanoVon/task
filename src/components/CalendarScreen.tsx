@@ -278,7 +278,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   }
 
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0, overflow: 'hidden' }}>
       <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -287,7 +287,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
       <div className="cal-nav">
         <button className="cal-nav-btn" onClick={() => calMove(-1)}>‹</button>
         <span className="cal-nav-title">{navTitle()}</span>
