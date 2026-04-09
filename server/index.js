@@ -117,11 +117,19 @@ for (const sql of [
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
 
-// streaks は UNIQUE(user_id, streak_date) が必要なため、制約がなければ作り直す
+// streaks の UNIQUE(user_id, streak_date) 複合制約を確認。なければ再作成
 {
-  const indexes = await client.execute('PRAGMA index_list(streaks)');
-  const hasUnique = indexes.rows.some(r => Number(r[2]) === 1);
-  if (!hasUnique) {
+  let needsRecreate = false;
+  try {
+    await client.execute(`
+      INSERT INTO streaks (user_id, streak_date, completed) VALUES ('__chk__', '__chk__', 0)
+      ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = completed + 0
+    `);
+    await client.execute(`DELETE FROM streaks WHERE user_id = '__chk__'`);
+  } catch {
+    needsRecreate = true;
+  }
+  if (needsRecreate) {
     await client.execute('DROP TABLE IF EXISTS streaks');
     await client.execute(`
       CREATE TABLE streaks (

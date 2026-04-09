@@ -103,13 +103,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
   async function completeTask(task: Task) {
     await apiFetch('PATCH', `/api/tasks/${task.id}`, { done: 1 });
-    await apiFetch('POST', '/api/logs', {
+    // ログ記録失敗はUIに影響させない
+    apiFetch('POST', '/api/logs', {
       task_id: task.id,
       task_name: task.name,
       task_type: task.type,
       dur: task.dur,
       done: 1,
-    });
+    }).catch(() => {});
     dispatch({ type: 'UPDATE', payload: { ...task, done: true } });
     dispatch({ type: 'LOG_COMPLETE', payload: task });
 
