@@ -50,11 +50,27 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const popRef = useRef<HTMLDivElement>(null);
 
   const todayStr = today();
-  // 今日のタスク：通常タスク＋今日期限のtimedタスク＋定期タスク
+
+  function isRepeatOnDate(t: Task, ds: string) {
+    const d = new Date(ds + 'T00:00:00');
+    if (t.runit === 'day' || t.runit === 'hour') return true;
+    if (t.runit === 'week') {
+      const dow = d.getDay() === 0 ? 6 : d.getDay() - 1;
+      if (!t.wdays || !t.wdays.length) return true;
+      return t.wdays.includes(dow);
+    }
+    if (t.runit === 'month') {
+      if (!t.created_at) return false;
+      return d.getDate() === new Date(t.created_at).getDate();
+    }
+    return false;
+  }
+
+  // 今日のタスク：通常タスク＋今日期限のtimedタスク＋今日が対象の定期タスク
   const todayTasks = tasks.filter(t =>
     t.type === 'normal' ||
     (t.type === 'timed' && t.task_date === todayStr) ||
-    t.type === 'repeat'
+    (t.type === 'repeat' && isRepeatOnDate(t, todayStr))
   );
   const doneN = todayTasks.filter(t => t.done).length;
   const totalN = todayTasks.length;
