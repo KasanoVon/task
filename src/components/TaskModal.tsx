@@ -88,13 +88,13 @@ export function TaskModal({ onClose, task }: Props) {
             <option>健康</option>
             <option>その他</option>
           </select>
-          <select value={dur} onChange={e => setDur(e.target.value)}>
-            <option>5分</option>
-            <option>10分</option>
-            <option>20分</option>
-            <option>30分</option>
-            <option>60分</option>
-          </select>
+          <input
+            type="text"
+            value={dur}
+            onChange={e => setDur(e.target.value)}
+            placeholder="例: 30分"
+            style={{ width: '80px' }}
+          />
         </div>
         <div className="type-tabs">
           {(['normal', 'timed', 'repeat'] as TaskType[]).map(t => (
