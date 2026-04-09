@@ -19,11 +19,19 @@ function todayStr() {
 
 type SortMode = 'manual' | 'deadline' | 'diff' | 'time' | 'cat';
 
-interface Props {
-  onShowFocus: () => void;
+function dateStr() {
+  const d = new Date();
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + days[d.getDay()] + '曜日';
 }
 
-export function ListScreen({ onShowFocus }: Props) {
+interface Props {
+  onShowFocus: () => void;
+  username: string;
+  onLogout: () => void;
+}
+
+export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const { state, updateTask, deleteTask, reorderTasks } = useTask();
   const { tasks } = state;
   const td = todayStr();
@@ -78,8 +86,12 @@ export function ListScreen({ onShowFocus }: Props) {
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
       <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
-        <span className="tb-title-accent" style={{ fontSize: '18px', fontWeight: 700 }}>タスク</span>
-        <button className="tb-btn" style={{ fontSize: '12px', padding: '5px 13px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer', fontWeight: 600 }} onClick={() => setFormOpen(true)}>＋ 追加</button>
+        <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
+          <button style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }} onClick={onLogout}>ログアウト</button>
+          <button style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer', fontWeight: 600 }} onClick={() => setFormOpen(true)}>＋ 追加</button>
+        </div>
       </div>
 
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}

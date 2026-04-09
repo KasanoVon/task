@@ -40,11 +40,19 @@ function taskOnDate(t: Task, ds: string) {
 interface Props {
   onShowFocus: () => void;
   onShowList: () => void;
+  username: string;
+  onLogout: () => void;
+}
+
+function dateStr() {
+  const d = new Date();
+  const days = ['日', '月', '火', '水', '木', '金', '土'];
+  return (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + days[d.getDay()] + '曜日';
 }
 
 type CalView = 'month' | 'week';
 
-export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowList }: Props) {
+export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowList, username, onLogout }: Props) {
   const { state } = useTask();
   const { tasks } = state;
 
@@ -272,7 +280,11 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
       <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
-        <span className="tb-title-accent" style={{ fontSize: '18px', fontWeight: 700 }}>カレンダー</span>
+        <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
+          <button style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }} onClick={onLogout}>ログアウト</button>
+        </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>

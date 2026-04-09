@@ -53,12 +53,18 @@ function AppMain() {
           />
         )}
         {screen === 'list' && (
-          <ListScreen onShowFocus={() => setScreen('focus')} />
+          <ListScreen
+            onShowFocus={() => setScreen('focus')}
+            username={authState.currentUser?.username ?? ''}
+            onLogout={logout}
+          />
         )}
         {screen === 'cal' && (
           <CalendarScreen
             onShowFocus={() => setScreen('focus')}
             onShowList={() => setScreen('list')}
+            username={authState.currentUser?.username ?? ''}
+            onLogout={logout}
           />
         )}
         {screen === 'done' && (
