@@ -60,7 +60,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const doneN = todayTasks.filter(t => t.done).length;
   const totalN = todayTasks.length;
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
-  const normalTasks = tasks.filter(t => !t.done && t.type === 'normal');
+  const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
   const currentTask = normalTasks[0] ?? null;
 
   useEffect(() => {
