@@ -104,15 +104,20 @@ await client.executeMultiple(`
   );
 `);
 
-// sessions テーブルのマイグレーション（user_id カラムがない古いスキーマを修正）
-try {
-  await client.execute('ALTER TABLE sessions ADD COLUMN user_id TEXT');
-  // 古い無効セッションを削除
-  await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
-  console.log('sessions テーブルをマイグレーションしました');
-} catch {
-  // user_id カラムが既に存在する場合は何もしない
+// 全テーブルのマイグレーション（user_id 等のカラムが古いスキーマに不足している場合を修正）
+for (const sql of [
+  'ALTER TABLE sessions  ADD COLUMN user_id    TEXT',
+  'ALTER TABLE tasks     ADD COLUMN user_id    TEXT',
+  'ALTER TABLE tasks     ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE daily_logs ADD COLUMN user_id   TEXT',
+  'ALTER TABLE daily_logs ADD COLUMN log_date  TEXT',
+  'ALTER TABLE streaks   ADD COLUMN user_id    TEXT',
+]) {
+  try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
+// user_id が NULL の無効セッションを削除
+await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
+console.log('マイグレーション完了');
 
 const isProd = process.env.NODE_ENV === 'production';
 
