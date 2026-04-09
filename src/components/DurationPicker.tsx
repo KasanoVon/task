@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 
 const ITEM_H = 44;
-const HOURS = Array.from({ length: 9 }, (_, i) => i); // 0〜8時間
+const HOURS = Array.from({ length: 25 }, (_, i) => i); // 0〜24時間
 const MINS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
 function parseDur(s: string): [number, number] {
