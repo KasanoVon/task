@@ -54,7 +54,7 @@ export function TaskModal({ onClose, task }: Props) {
     } else if (ftype === 'repeat') {
       body = { ...base, type: 'repeat', runit, rnum, rtime, wdays };
     } else {
-      body = { ...base, type: 'normal', task_date: taskDate || null };
+      body = { ...base, type: 'normal', task_date: taskDate || undefined };
     }
     if (isEdit) {
       await updateTask(task!.id, body);
