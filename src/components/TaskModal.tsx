@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
 import { DurationPicker } from './DurationPicker';
 import { CategoryPicker } from './CategoryPicker';
+import { DifficultyPicker } from './DifficultyPicker';
+import { DatePicker } from './DatePicker';
 import type { Task } from '../types';
 
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
@@ -29,6 +31,8 @@ export function TaskModal({ onClose, task }: Props) {
   const [dur, setDur] = useState(task?.dur ?? '10分');
   const [durPickerOpen, setDurPickerOpen] = useState(false);
   const [catPickerOpen, setCatPickerOpen] = useState(false);
+  const [diffPickerOpen, setDiffPickerOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [ftype, setFtype] = useState<TaskType>((task?.type as TaskType) ?? 'normal');
 
   // timed
@@ -84,6 +88,20 @@ export function TaskModal({ onClose, task }: Props) {
         onCancel={() => setCatPickerOpen(false)}
       />
     )}
+    {diffPickerOpen && (
+      <DifficultyPicker
+        value={diff}
+        onSelect={v => { setDiff(v); setDiffPickerOpen(false); }}
+        onCancel={() => setDiffPickerOpen(false)}
+      />
+    )}
+    {datePickerOpen && (
+      <DatePicker
+        value={taskDate}
+        onSelect={v => { setTaskDate(v); setDatePickerOpen(false); }}
+        onCancel={() => setDatePickerOpen(false)}
+      />
+    )}
     <div className="add-form open" style={{ marginBottom: '14px' }}>
       <div className="fg">
         <input
@@ -95,11 +113,11 @@ export function TaskModal({ onClose, task }: Props) {
           autoFocus
         />
         <div className="frow">
-          <select value={diff} onChange={e => setDiff(e.target.value as 'easy' | 'mid' | 'hard')}>
-            <option value="easy">簡単</option>
-            <option value="mid">普通</option>
-            <option value="hard">難しい</option>
-          </select>
+          <button
+            type="button"
+            onClick={() => setDiffPickerOpen(true)}
+            style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', cursor: 'pointer', minWidth: '70px' }}
+          >{{ easy: '簡単', mid: '普通', hard: '難しい' }[diff]}</button>
           <button
             type="button"
             onClick={() => setCatPickerOpen(true)}
@@ -195,11 +213,11 @@ export function TaskModal({ onClose, task }: Props) {
           <div className="ef open">
             <span className="flbl">実施日</span>
             <div className="frow">
-              <input
-                type="date"
-                value={taskDate}
-                onChange={e => setTaskDate(e.target.value)}
-              />
+              <button
+                type="button"
+                onClick={() => setDatePickerOpen(true)}
+                style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', cursor: 'pointer' }}
+              >{taskDate}</button>
             </div>
           </div>
         )}
