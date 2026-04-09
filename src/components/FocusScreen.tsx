@@ -70,22 +70,29 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       const n = now();
       setClockStr(n);
 
-      // 次の予定
-      const cs = tasks.filter(t => !t.done && (
+      // 次の予定：時刻付きタスク（timed/repeat）を優先、なければ次の通常タスク
+      const timedNext = tasks.filter(t => !t.done && (
         (t.type === 'timed' && t.task_date === today() && (t.end_time ?? '') > n) ||
         (t.type === 'repeat' && (t.rtime ?? '') > n)
       ));
-      if (cs.length > 0) {
-        cs.sort((a, b) => {
+      if (timedNext.length > 0) {
+        timedNext.sort((a, b) => {
           const ta = a.type === 'timed' ? (a.end_time ?? '') : (a.rtime ?? '');
           const tb = b.type === 'timed' ? (b.end_time ?? '') : (b.rtime ?? '');
           return ta < tb ? -1 : 1;
         });
-        const nx = cs[0];
+        const nx = timedNext[0];
         const t = nx.type === 'timed' ? (nx.end_time ?? '') : (nx.rtime ?? '');
         setNextStr('次の予定：' + t + ' ' + nx.name);
       } else {
-        setNextStr('次の予定：なし');
+        // 通常タスクの2番目（currentTaskの次）を表示
+        const normals = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === today()));
+        const nextNormal = normals[1] ?? normals[0] ?? null;
+        if (nextNormal) {
+          setNextStr('次の予定：' + nextNormal.name);
+        } else {
+          setNextStr('次の予定：なし');
+        }
       }
 
       // 割り込み: 期限あり
