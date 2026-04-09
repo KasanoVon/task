@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
+import { DurationPicker } from './DurationPicker';
 import type { Task } from '../types';
 
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
@@ -25,6 +26,7 @@ export function TaskModal({ onClose, task }: Props) {
   const [diff, setDiff] = useState<'easy' | 'mid' | 'hard'>(task?.diff ?? 'mid');
   const [cat, setCat] = useState(task?.cat ?? 'その他');
   const [dur, setDur] = useState(task?.dur ?? '10分');
+  const [durPickerOpen, setDurPickerOpen] = useState(false);
   const [ftype, setFtype] = useState<TaskType>((task?.type as TaskType) ?? 'normal');
 
   // timed
@@ -65,6 +67,14 @@ export function TaskModal({ onClose, task }: Props) {
   }
 
   return (
+    <>
+    {durPickerOpen && (
+      <DurationPicker
+        value={dur}
+        onConfirm={v => { setDur(v); setDurPickerOpen(false); }}
+        onCancel={() => setDurPickerOpen(false)}
+      />
+    )}
     <div className="add-form open" style={{ marginBottom: '14px' }}>
       <div className="fg">
         <input
@@ -88,13 +98,11 @@ export function TaskModal({ onClose, task }: Props) {
             <option>健康</option>
             <option>その他</option>
           </select>
-          <input
-            type="text"
-            value={dur}
-            onChange={e => setDur(e.target.value)}
-            placeholder="例: 30分"
-            style={{ width: '80px' }}
-          />
+          <button
+            type="button"
+            onClick={() => setDurPickerOpen(true)}
+            style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', cursor: 'pointer', minWidth: '70px' }}
+          >{dur}</button>
         </div>
         <div className="type-tabs">
           {(['normal', 'timed', 'repeat'] as TaskType[]).map(t => (
@@ -204,5 +212,6 @@ export function TaskModal({ onClose, task }: Props) {
         </div>
       </div>
     </div>
+    </>
   );
 }
