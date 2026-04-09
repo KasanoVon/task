@@ -55,6 +55,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const todayTasks = tasks.filter(t => {
     if (t.type === 'timed') return t.task_date === todayStr;
     if (t.type === 'repeat') return true;
+    // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日
+    if (t.done) return t.task_date === todayStr;
     return !t.task_date || t.task_date === todayStr;
   });
   const doneN = todayTasks.filter(t => t.done).length;

@@ -456,6 +456,15 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
     const b = req.body ?? {};
+
+    // 通常タスクをdone=1にする際、task_dateが未設定なら今日の日付を自動セット
+    if (b.done === 1) {
+      const existing = await db.get('SELECT task_date, type FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
+      if (existing && existing.type === 'normal' && !existing.task_date) {
+        b.task_date = new Date().toISOString().slice(0, 10);
+      }
+    }
+
     const allowed = ['name', 'diff', 'cat', 'dur', 'type', 'done', 'sort_order',
                      'task_date', 'start_time', 'end_time', 'alert_min', 'runit', 'rnum', 'rtime', 'wdays'];
     const sets = [];
