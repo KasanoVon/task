@@ -1,0 +1,16 @@
+{
+  "name": "task-app",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "migrate": "node src/migrate.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0",
+    "hono": "^4.7.0",
+    "@hono/node-server": "^1.13.0",
+    "dotenv": "^16.4.0"
+  }
+}
