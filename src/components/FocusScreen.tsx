@@ -49,10 +49,17 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [burst, setBurst] = useState(false);
   const popRef = useRef<HTMLDivElement>(null);
 
-  const normalTasks = tasks.filter(t => !t.done && t.type === 'normal');
-  const doneN = tasks.filter(t => t.done && t.type === 'normal').length;
-  const totalN = tasks.filter(t => t.type === 'normal').length;
+  const todayStr = today();
+  // 今日のタスク：通常タスク＋今日期限のtimedタスク
+  const todayTasks = tasks.filter(t =>
+    t.type === 'normal' ||
+    (t.type === 'timed' && t.task_date === todayStr) ||
+    t.type === 'repeat'
+  );
+  const doneN = todayTasks.filter(t => t.done).length;
+  const totalN = todayTasks.length;
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
+  const normalTasks = tasks.filter(t => !t.done && t.type === 'normal');
   const currentTask = normalTasks[0] ?? null;
 
   useEffect(() => {

@@ -44,7 +44,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   const { state } = useTask();
   const { tasks } = state;
 
-  const [calView, setCalView] = useState<CalView>('month');
+  const [calView] = useState<CalView>('month');
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calWeekStart, setCalWeekStart] = useState<Date | null>(null);
@@ -271,17 +271,6 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
         <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>カレンダー</span>
       </div>
 
-      <div className="cal-view-tabs">
-        {(['month', 'week'] as CalView[]).map(v => (
-          <button
-            key={v}
-            className={`cvtab${calView === v ? ' on' : ''}`}
-            onClick={() => { setCalView(v); setSelectedDate(null); }}
-          >
-            {v === 'month' ? '月' : '週'}
-          </button>
-        ))}
-      </div>
 
       <div className="cal-nav">
         <button className="cal-nav-btn" onClick={() => calMove(-1)}>‹</button>
