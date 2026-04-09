@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useTask } from '../context/TaskContext';
 import type { StreakRow } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -11,6 +10,14 @@ function today() {
 }
 function durToMin(s: string) { return parseInt(s) || 0; }
 
+interface LogRow {
+  id: number;
+  task_name: string;
+  task_type: string;
+  dur: string;
+  done: number;
+}
+
 interface Props {
   onShowFocus: () => void;
   onShowList: () => void;
@@ -18,24 +25,31 @@ interface Props {
 }
 
 export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
-  const { state } = useTask();
-  const { completedLog } = state;
   const [streak, setStreak] = useState(0);
   const [streakRows, setStreakRows] = useState<StreakRow[]>([]);
+  const [logs, setLogs] = useState<LogRow[]>([]);
 
-  const totalMin = completedLog.reduce((s, t) => s + durToMin(t.dur), 0);
+  const totalMin = logs.reduce((s, t) => s + durToMin(t.dur), 0);
 
   useEffect(() => {
-    async function fetchStreaks() {
+    async function fetchAll() {
       try {
-        const res = await fetch(`${API_BASE}/api/streaks?days=14`, { credentials: 'include' });
-        if (!res.ok) return;
-        const data = (await res.json()) as { streak: number; rows: StreakRow[] };
-        setStreak(data.streak);
-        setStreakRows(data.rows);
+        const [streakRes, logsRes] = await Promise.all([
+          fetch(`${API_BASE}/api/streaks?days=14`, { credentials: 'include' }),
+          fetch(`${API_BASE}/api/logs?date=${today()}`, { credentials: 'include' }),
+        ]);
+        if (streakRes.ok) {
+          const data = (await streakRes.json()) as { streak: number; rows: StreakRow[] };
+          setStreak(data.streak);
+          setStreakRows(data.rows);
+        }
+        if (logsRes.ok) {
+          const data = (await logsRes.json()) as LogRow[];
+          setLogs(data);
+        }
       } catch { /* 無視 */ }
     }
-    fetchStreaks();
+    fetchAll();
   }, []);
 
   function renderDots() {
@@ -67,7 +81,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
 
         <div className="sum-grid">
           <div className="sum-card">
-            <div className="sum-val">{completedLog.length}</div>
+            <div className="sum-val">{logs.length}</div>
             <div className="sum-lbl">タスク完了</div>
           </div>
           <div className="sum-card">
@@ -90,12 +104,12 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
 
         <div className="log-wrap">
           <div className="log-lbl">きょうのきろく</div>
-          {completedLog.map((t, i) => {
-            const bg = t.type === 'timed' ? 'li-timed-bg' : 'li-done-bg';
-            const stroke = t.type === 'timed' ? '#D85A30' : '#639922';
-            const typetag = t.type === 'timed'
+          {logs.map((t, i) => {
+            const bg = t.task_type === 'timed' ? 'li-timed-bg' : 'li-done-bg';
+            const stroke = t.task_type === 'timed' ? '#D85A30' : '#639922';
+            const typetag = t.task_type === 'timed'
               ? <span style={{ fontSize: '10px', background: '#FAECE7', color: '#712B13', padding: '1px 6px', borderRadius: '999px' }}>期限あり</span>
-              : t.type === 'repeat'
+              : t.task_type === 'repeat'
               ? <span style={{ fontSize: '10px', background: '#EEEDFE', color: '#534AB7', padding: '1px 6px', borderRadius: '999px' }}>定期</span>
               : null;
             return (
@@ -106,7 +120,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
                   </svg>
                 </div>
                 <div className="li-body">
-                  <div className="li-name">{t.name}</div>
+                  <div className="li-name">{t.task_name}</div>
                   <div className="li-meta">{t.dur} {typetag}</div>
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--gr-d)' }}>完了</div>
