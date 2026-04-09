@@ -270,12 +270,12 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   }
 
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="topbar">
-        <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>カレンダー</span>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+      <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
+        <span className="tb-title-accent" style={{ fontSize: '18px', fontWeight: 700 }}>カレンダー</span>
       </div>
 
-
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
       <div className="cal-nav">
         <button className="cal-nav-btn" onClick={() => calMove(-1)}>‹</button>
         <span className="cal-nav-title">{navTitle()}</span>
@@ -317,6 +317,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--gr)', display: 'inline-block' }} />完了
         </span>
+      </div>
       </div>
     </div>
   );

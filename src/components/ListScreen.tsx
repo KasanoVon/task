@@ -76,15 +76,16 @@ export function ListScreen({ onShowFocus }: Props) {
   const sorted = getSorted();
 
   return (
-    <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="topbar">
-        <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>タスク</span>
-        <button className="tb-btn btn-te" onClick={() => setFormOpen(true)}>＋ 追加</button>
+    <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+      <div className="topbar topbar-accent" style={{ flexShrink: 0 }}>
+        <span className="tb-title-accent" style={{ fontSize: '18px', fontWeight: 700 }}>タスク</span>
+        <button className="tb-btn" style={{ fontSize: '12px', padding: '5px 13px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer', fontWeight: 600 }} onClick={() => setFormOpen(true)}>＋ 追加</button>
       </div>
 
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}
       {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
 
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
       <div className="sort-tabs">
         {(['manual', 'deadline', 'diff', 'time', 'cat'] as SortMode[]).map(m => (
           <button
@@ -157,6 +158,7 @@ export function ListScreen({ onShowFocus }: Props) {
 
       <div style={{ marginTop: 'auto', paddingTop: '14px' }}>
         <button className="start-btn" onClick={onShowFocus}>この順番でスタート →</button>
+      </div>
       </div>
     </div>
   );
