@@ -231,6 +231,10 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           >
             {completing ? '✓ できた！' : 'できた！'}
           </button>
+          <button
+            onClick={skipTask}
+            style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '10px', border: '1.5px solid var(--bd2)', background: 'none', color: 'var(--t2)', fontSize: '13px', cursor: 'pointer' }}
+          >このタスクを後で ›</button>
         </div>
       ) : (
         <div className="focus-card">
@@ -241,9 +245,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         </div>
       )}
 
-      <div style={{ marginTop: 'auto', paddingBottom: '4px', display: 'flex', justifyContent: 'center' }}>
-        <button className="sub-btn" onClick={skipTask} style={{ fontSize: '12px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>このタスクを後で ›</button>
-      </div>
       </div>
     </div>
   );
