@@ -207,7 +207,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
 
       {/* フォーカスカード */}
       {currentTask ? (
-        <div className={`focus-card${currentTask.type === 'timed' ? ' is-timed' : currentTask.type === 'repeat' ? ' is-repeat' : ''}`}>
+        <div className={`focus-card${currentTask.type === 'timed' ? ' is-timed' : currentTask.type === 'repeat' ? ' is-repeat' : ''}`} style={{ position: 'relative' }}>
           {currentTask.type === 'timed' && (
             <div className="dl-ribbon">終了 {currentTask.end_time} まで</div>
           )}
@@ -215,6 +215,10 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
             <div className={`bring${burst ? ' go' : ''}`} />
           </div>
           <div className="pop fly" ref={popRef}>完了！</div>
+          <button
+            onClick={skipTask}
+            style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 10px', cursor: 'pointer' }}
+          >後で</button>
           <div className="f-hint">今やること</div>
           <div className="f-name">{currentTask.name}</div>
           <div className="f-pills">
@@ -231,10 +235,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           >
             {completing ? '✓ できた！' : 'できた！'}
           </button>
-          <button
-            onClick={skipTask}
-            style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '10px', border: '1.5px solid var(--bd2)', background: 'none', color: 'var(--t2)', fontSize: '13px', cursor: 'pointer' }}
-          >このタスクを後で ›</button>
         </div>
       ) : (
         <div className="focus-card">
