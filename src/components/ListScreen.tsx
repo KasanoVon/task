@@ -90,7 +90,6 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
           <button style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }} onClick={onLogout}>ログアウト</button>
-          <button style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer', fontWeight: 600 }} onClick={() => setFormOpen(true)}>＋ 追加</button>
         </div>
       </div>
 
@@ -98,7 +97,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', padding: '14px 14px 4px', scrollbarWidth: 'none' }}>
-      <div className="sort-tabs">
+      <div className="sort-tabs" style={{ display: 'flex', alignItems: 'center' }}>
         {(['manual', 'deadline', 'diff', 'time', 'cat'] as SortMode[]).map(m => (
           <button
             key={m}
@@ -108,6 +107,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
             {m === 'manual' ? '手動' : m === 'deadline' ? '期限順' : m === 'diff' ? '難易度' : m === 'time' ? '時間順' : 'カテゴリ'}
           </button>
         ))}
+        <button className="tb-btn btn-te" style={{ marginLeft: 'auto', flexShrink: 0 }} onClick={() => setFormOpen(true)}>＋ 追加</button>
       </div>
 
       <div className="task-list">
