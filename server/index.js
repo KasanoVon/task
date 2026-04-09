@@ -104,17 +104,38 @@ await client.executeMultiple(`
   );
 `);
 
-// 全テーブルのマイグレーション（user_id 等のカラムが古いスキーマに不足している場合を修正）
+// カラム追加マイグレーション（既存の場合は無視）
 for (const sql of [
-  'ALTER TABLE sessions  ADD COLUMN user_id    TEXT',
-  'ALTER TABLE tasks     ADD COLUMN user_id    TEXT',
-  'ALTER TABLE tasks     ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
-  'ALTER TABLE daily_logs ADD COLUMN user_id   TEXT',
-  'ALTER TABLE daily_logs ADD COLUMN log_date  TEXT',
-  'ALTER TABLE streaks   ADD COLUMN user_id    TEXT',
+  'ALTER TABLE sessions    ADD COLUMN user_id    TEXT',
+  'ALTER TABLE tasks       ADD COLUMN user_id    TEXT',
+  'ALTER TABLE tasks       ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE daily_logs  ADD COLUMN user_id    TEXT',
+  'ALTER TABLE daily_logs  ADD COLUMN log_date   TEXT',
+  'ALTER TABLE daily_logs  ADD COLUMN task_type  TEXT NOT NULL DEFAULT \'normal\'',
+  'ALTER TABLE daily_logs  ADD COLUMN dur        TEXT NOT NULL DEFAULT \'\'',
 ]) {
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
+
+// streaks は UNIQUE(user_id, streak_date) が必要なため作り直す
+{
+  const cols = await client.execute('PRAGMA table_info(streaks)');
+  const hasUserId = cols.rows.some(r => String(r[1]) === 'user_id');
+  if (!hasUserId) {
+    await client.execute('DROP TABLE IF EXISTS streaks');
+    await client.execute(`
+      CREATE TABLE streaks (
+        id           INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id      TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        streak_date  TEXT    NOT NULL,
+        completed    INTEGER NOT NULL DEFAULT 0,
+        UNIQUE(user_id, streak_date)
+      )
+    `);
+    console.log('streaks テーブルを再作成しました');
+  }
+}
+
 // user_id が NULL の無効セッションを削除
 await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
 console.log('マイグレーション完了');
