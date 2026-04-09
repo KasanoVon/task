@@ -122,7 +122,7 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
   const dateStr = (d.getMonth() + 1) + '月' + d.getDate() + '日 ' + days[d.getDay()] + '曜日';
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
       <div className="topbar">
         <span className="tb-title">{dateStr}</span>
         <button className="tb-btn btn-te" onClick={onShowList}>リスト ›</button>
@@ -180,6 +180,7 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
       </div>
 
       {/* フォーカスカード */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       {currentTask ? (
         <div className={`focus-card${currentTask.type === 'timed' ? ' is-timed' : currentTask.type === 'repeat' ? ' is-repeat' : ''}`}>
           {currentTask.type === 'timed' && (
@@ -215,13 +216,15 @@ export function FocusScreen({ onShowList, onShowCal, onShowDone }: Props) {
         </div>
       )}
 
+      </div>
+
       <div className="sub-row">
         <button className="sub-btn" onClick={skipTask}>あとで ›</button>
         <button className="sub-btn" onClick={onShowList}>リスト ›</button>
         <button className="sub-btn" onClick={onShowCal}>カレンダー ›</button>
       </div>
 
-      {/* 完了数バッジ（ヘッダー右） */}
+      {/* 完了数バッジ */}
       {completedLog.length > 0 && (
         <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '11px', color: 'var(--t2)' }}>
           本日完了: {completedLog.length}件

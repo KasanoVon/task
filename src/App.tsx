@@ -37,7 +37,7 @@ function AppMain() {
   if (!state.loaded) return <LoadingScreen />;
 
   return (
-    <div className="app">
+    <div className="app" style={{ flex: 1 }}>
       {/* エラートースト */}
       <div className="err-toast" id="err-toast" />
 
