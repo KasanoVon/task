@@ -11,6 +11,12 @@ function rLabel(t: Task) {
   return '毎' + (t.rnum ?? 1) + RUNIT_JP[t.runit ?? 'day'] + w + ' ' + (t.rtime ?? '');
 }
 
+function todayStr() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 type SortMode = 'manual' | 'deadline' | 'diff' | 'time' | 'cat';
 
 interface Props {
@@ -20,13 +26,20 @@ interface Props {
 export function ListScreen({ onShowFocus }: Props) {
   const { state, updateTask, deleteTask, reorderTasks } = useTask();
   const { tasks } = state;
+  const td = todayStr();
+  // 今日のタスクのみ表示（日付なし or 今日の日付）
+  const todayTasks = tasks.filter(t => {
+    if (t.type === 'timed') return t.task_date === td;
+    if (t.type === 'repeat') return true;
+    return !t.task_date || t.task_date === td;
+  });
   const [sortMode, setSortMode] = useState<SortMode>('manual');
   const [formOpen, setFormOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const dragSrc = useRef<number | null>(null);
 
   function getSorted() {
-    const b = [...tasks];
+    const b = [...todayTasks];
     if (sortMode === 'deadline') return b.sort((a, c) => {
       const ta = a.type === 'timed' ? (a.task_date ?? '') + 'T' + (a.end_time ?? '') :
                  a.type === 'repeat' ? '9999T' + (a.rtime ?? '') : '9999T99:99';
@@ -43,10 +56,6 @@ export function ListScreen({ onShowFocus }: Props) {
     return b;
   }
 
-  async function toggleDone(t: Task) {
-    await updateTask(t.id, { done: !t.done ? 1 : 0 } as unknown as Partial<Task>);
-  }
-
   async function handleDrop(fromId: number, toId: number) {
     if (fromId === toId) return;
     const list = [...tasks];
@@ -56,6 +65,10 @@ export function ListScreen({ onShowFocus }: Props) {
     const [moved] = list.splice(fi, 1);
     list.splice(ti, 0, moved);
     await reorderTasks(list.map(t => t.id));
+  }
+
+  async function toggleDone(t: Task) {
+    await updateTask(t.id, { done: !t.done ? 1 : 0 } as unknown as Partial<Task>);
   }
 
   const sorted = getSorted();

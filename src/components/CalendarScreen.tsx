@@ -29,7 +29,8 @@ function isRepeatOnDate(t: Task, ds: string) {
 function taskOnDate(t: Task, ds: string) {
   if (t.type === 'timed') return t.task_date === ds;
   if (t.type === 'repeat') return isRepeatOnDate(t, ds);
-  return ds === today();
+  // 通常タスク: 日付指定ありはその日、なしは今日
+  return t.task_date ? t.task_date === ds : ds === today();
 }
 
 interface Props {
