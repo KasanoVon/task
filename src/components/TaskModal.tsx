@@ -58,7 +58,7 @@ export function TaskModal({ onClose, task }: Props) {
     } else if (ftype === 'repeat') {
       body = { ...base, type: 'repeat', runit, rnum, rtime, wdays };
     } else {
-      body = { ...base, type: 'normal', task_date: taskDate || undefined };
+      body = { ...base, type: 'normal', task_date: taskDate || today() };
     }
     if (isEdit) {
       await updateTask(task!.id, body);
@@ -193,22 +193,13 @@ export function TaskModal({ onClose, task }: Props) {
         {/* 通常タスクの日付指定 */}
         {ftype === 'normal' && (
           <div className="ef open">
-            <span className="flbl">実施日（任意）</span>
+            <span className="flbl">実施日</span>
             <div className="frow">
               <input
                 type="date"
                 value={taskDate}
                 onChange={e => setTaskDate(e.target.value)}
               />
-              {taskDate && (
-                <button
-                  type="button"
-                  style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: 'none', cursor: 'pointer' }}
-                  onClick={() => setTaskDate('')}
-                >
-                  クリア
-                </button>
-              )}
             </div>
           </div>
         )}
