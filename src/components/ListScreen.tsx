@@ -79,7 +79,7 @@ export function ListScreen({ onShowFocus }: Props) {
     <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
       <div className="topbar">
         <span className="tb-title" style={{ fontSize: '22px', fontWeight: 700 }}>タスク</span>
-        <button className="tb-btn btn-te" onClick={() => setFormOpen(true)}>＋ ついか</button>
+        <button className="tb-btn btn-te" onClick={() => setFormOpen(true)}>＋ 追加</button>
       </div>
 
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}
@@ -156,7 +156,7 @@ export function ListScreen({ onShowFocus }: Props) {
       </div>
 
       <div style={{ marginTop: 'auto', paddingTop: '14px' }}>
-        <button className="start-btn" onClick={onShowFocus}>このじゅんばんでスタート →</button>
+        <button className="start-btn" onClick={onShowFocus}>この順番でスタート →</button>
       </div>
     </div>
   );

@@ -76,7 +76,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
       </div>
 
       <div className="done-screen">
-        <div className="done-title">きょうもおつかれさま！</div>
+        <div className="done-title">今日もお疲れさま！</div>
         <div className="done-sub">まとめ</div>
 
         <div className="sum-grid">
@@ -90,20 +90,20 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
           </div>
           <div className="sum-card">
             <div className="sum-val">{streak}</div>
-            <div className="sum-lbl">れんぞく日</div>
+            <div className="sum-lbl">連続日</div>
           </div>
         </div>
 
         <div className="streak-section">
           <div className="sr-head">
-            <span className="sr-title">れんぞくきろく</span>
-            <span className="sr-num">🔥 {streak}日れんぞく</span>
+            <span className="sr-title">連続記録</span>
+            <span className="sr-num">🔥 {streak}日連続</span>
           </div>
           <div className="dots">{renderDots()}</div>
         </div>
 
         <div className="log-wrap">
-          <div className="log-lbl">きょうのきろく</div>
+          <div className="log-lbl">今日の記録</div>
           {logs.map((t, i) => {
             const bg = t.task_type === 'timed' ? 'li-timed-bg' : 'li-done-bg';
             const stroke = t.task_type === 'timed' ? '#D85A30' : '#639922';

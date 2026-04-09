@@ -213,8 +213,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           <div className="burst">
             <div className={`bring${burst ? ' go' : ''}`} />
           </div>
-          <div className="pop fly" ref={popRef}>かんりょう！</div>
-          <div className="f-hint">いまやること</div>
+          <div className="pop fly" ref={popRef}>完了！</div>
+          <div className="f-hint">今やること</div>
           <div className="f-name">{currentTask.name}</div>
           <div className="f-pills">
             <span className="pill p-time">{currentTask.dur}</span>
@@ -233,15 +233,15 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         </div>
       ) : (
         <div className="focus-card">
-          <div className="f-hint">いまやること</div>
-          <div className="f-name">きょうのタスクはすべて完了！</div>
+          <div className="f-hint">今やること</div>
+          <div className="f-name">今日のタスクはすべて完了！</div>
           <div className="f-pills" />
           <button className="done-btn" onClick={onShowDone}>まとめを見る</button>
         </div>
       )}
 
       <div style={{ marginTop: 'auto', paddingBottom: '4px', display: 'flex', justifyContent: 'center' }}>
-        <button className="sub-btn" onClick={skipTask} style={{ fontSize: '12px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>このタスクをあとで ›</button>
+        <button className="sub-btn" onClick={skipTask} style={{ fontSize: '12px', color: 'var(--t2)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px' }}>このタスクを後で ›</button>
       </div>
     </div>
   );

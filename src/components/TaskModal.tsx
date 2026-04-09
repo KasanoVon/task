@@ -77,13 +77,13 @@ export function TaskModal({ onClose, task }: Props) {
         />
         <div className="frow">
           <select value={diff} onChange={e => setDiff(e.target.value as 'easy' | 'mid' | 'hard')}>
-            <option value="easy">かんたん</option>
-            <option value="mid">ふつう</option>
-            <option value="hard">むずかしい</option>
+            <option value="easy">簡単</option>
+            <option value="mid">普通</option>
+            <option value="hard">難しい</option>
           </select>
           <select value={cat} onChange={e => setCat(e.target.value)}>
-            <option>そうじ</option>
-            <option>かたづけ</option>
+            <option>掃除</option>
+            <option>片付け</option>
             <option>料理</option>
             <option>健康</option>
             <option>その他</option>
@@ -103,7 +103,7 @@ export function TaskModal({ onClose, task }: Props) {
               className={`ttab${ftype === t ? ' on' : ''}`}
               onClick={() => setFtype(t)}
             >
-              {t === 'normal' ? '通常' : t === 'timed' ? '期限あり' : '定期くりかえし'}
+              {t === 'normal' ? '通常' : t === 'timed' ? '期限あり' : '定期繰り返し'}
             </button>
           ))}
         </div>
@@ -129,10 +129,10 @@ export function TaskModal({ onClose, task }: Props) {
           </div>
         )}
 
-        {/* 定期くりかえし */}
+        {/* 定期繰り返し */}
         {ftype === 'repeat' && (
           <div className="ef open">
-            <span className="flbl">くりかえし</span>
+            <span className="flbl">繰り返し</span>
             <div className="frow">
               <select value={runit} onChange={e => setRunit(e.target.value)}>
                 <option value="hour">時間ごと</option>
