@@ -142,12 +142,12 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
 
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column' }}>
-      <div className="topbar">
-        <span className="tb-title">{dateStr}</span>
+      <div className="topbar topbar-accent">
+        <span className="tb-title tb-title-accent">{dateStr}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'var(--t2)' }}>{username}</span>
+          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
           <button
-            style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: '0.5px solid var(--bd2)', background: 'none', color: 'var(--t3)', cursor: 'pointer' }}
+            style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }}
             onClick={onLogout}
           >ログアウト</button>
         </div>
