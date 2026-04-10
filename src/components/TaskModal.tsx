@@ -193,7 +193,7 @@ export function TaskModal({ onClose, task }: Props) {
                 {ftype === 'timed' && (
                     <div className="ef open" style={{ gap: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>日付</span>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>実施日</span>
                             <button type="button" onClick={() => setDatePickerOpen(true)} style={pickerBtn}>{taskDate}</button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
