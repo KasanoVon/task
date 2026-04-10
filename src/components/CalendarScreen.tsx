@@ -273,12 +273,12 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                 </div>
                 <span className={`dp-status ${statusCls}`}>{statusTxt}</span>
                 <button
-                  className="dp-edit-btn"
+                  className="ab edt"
                   onClick={e => { e.stopPropagation(); setEditTask(t); }}
-                  title="編集"
+                  aria-label="編集"
                 >
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 2l2 2L4 11H2v-2L9 2z"/>
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
                   </svg>
                 </button>
               </div>
