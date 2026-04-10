@@ -46,6 +46,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const [sortMode, setSortMode] = useState<SortMode>('manual');
   const [formOpen, setFormOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
+  const [doneOpen, setDoneOpen] = useState(false);
   const dragSrc = useRef<number | null>(null);
 
   // スワイプ管理
@@ -134,6 +135,105 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   }
 
   const sorted = getSorted();
+  const undone = sorted.filter(t => !t.done);
+  const done   = sorted.filter(t => t.done);
+
+  function renderTaskItem(t: Task) {
+    return (
+      <div key={t.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', marginBottom: '6px' }}>
+        {/* 右スワイプ背景（編集） */}
+        <div style={{
+          position: 'absolute', inset: 0, background: 'var(--pu)',
+          display: 'flex', alignItems: 'center', paddingLeft: '20px',
+          opacity: swipingId === t.id && swipeX > 0
+            ? Math.min(swipeX / MAX_SWIPE, 1)
+            : completingSwipe?.id === t.id && completingSwipe.dir === 'right' ? 1 : 0,
+          pointerEvents: 'none',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+          </svg>
+        </div>
+        {/* 左スワイプ背景（完了） */}
+        <div style={{
+          position: 'absolute', inset: 0, background: '#639922',
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '20px',
+          opacity: swipingId === t.id && swipeX < 0
+            ? Math.min(-swipeX / MAX_SWIPE, 1)
+            : completingSwipe?.id === t.id && completingSwipe.dir === 'left' ? 1 : 0,
+          pointerEvents: 'none',
+        }}>
+          <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="2,6.5 5,10 11,3" />
+          </svg>
+        </div>
+        <div
+          className={[
+            'ti',
+            t.done ? 'done-i' : '',
+            t.type === 'timed' ? 'timed-i' : t.type === 'repeat' ? 'repeat-i' : '',
+          ].filter(Boolean).join(' ')}
+          style={{
+            transform: swipingId === t.id
+              ? `translateX(${swipeX}px)`
+              : completingSwipe?.id === t.id
+                ? `translateX(${completingSwipe.dir === 'right' ? MAX_SWIPE : -MAX_SWIPE}px)`
+                : 'translateX(0)',
+            transition: swipingId === t.id ? 'none' : 'transform 0.2s ease',
+            marginBottom: 0,
+          }}
+          draggable={sortMode === 'manual'}
+          onDragStart={() => { dragSrc.current = t.id; }}
+          onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
+          onDragLeave={e => e.currentTarget.classList.remove('drag-over')}
+          onDrop={async e => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            if (dragSrc.current !== null) await handleDrop(dragSrc.current, t.id);
+          }}
+          onDragEnd={e => { dragSrc.current = null; e.currentTarget.classList.remove('dragging', 'drag-over'); }}
+          onTouchStart={e => onTouchStart(e, t.id)}
+          onTouchMove={onTouchMove}
+          onTouchEnd={() => onTouchEnd(t)}
+        >
+          <div className="dh" style={{ opacity: sortMode === 'manual' ? 1 : 0.3 }}>
+            <span /><span /><span />
+          </div>
+          <div className={`dd dd-${t.diff[0]}`} />
+          <div className="ti-body">
+            <div className={`ti-name${t.done ? ' done' : ''}`}>{t.name}</div>
+            <div className="ti-meta">
+              <span className="tp p-tm">{t.dur}</span>
+              <span className="tp p-ct">{t.cat}</span>
+              {t.type === 'timed' && <span className="tp p-dl2">期限 {t.end_time}</span>}
+              {t.type === 'repeat' && <span className="tp p-rp2">{rLabel(t)}</span>}
+              {t.done && <span className="tp p-dn">完了</span>}
+            </div>
+          </div>
+          <div className="ti-acts">
+            <button className="ab edt" onClick={() => setEditTask(t)}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+              </svg>
+            </button>
+            <button
+              className={`ab ck${t.done ? ' on' : ''}`}
+              onClick={() => toggleDone(t)}
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="2,6.5 5,10 11,3" />
+              </svg>
+            </button>
+            <button className="ab del" onClick={() => deleteTask(t.id)}>
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round">
+                <line x1="3" y1="3" x2="10" y2="10" /><line x1="10" y1="3" x2="3" y2="10" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
@@ -163,100 +263,32 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       </div>
 
       <div className="task-list">
-        {sorted.map(t => (
-          <div key={t.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', marginBottom: '6px' }}>
-            {/* 右スワイプ背景（編集） */}
-            <div style={{
-              position: 'absolute', inset: 0, background: 'var(--pu)',
-              display: 'flex', alignItems: 'center', paddingLeft: '20px',
-              opacity: swipingId === t.id && swipeX > 0
-                ? Math.min(swipeX / MAX_SWIPE, 1)
-                : completingSwipe?.id === t.id && completingSwipe.dir === 'right' ? 1 : 0,
-              pointerEvents: 'none',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+        {undone.map(t => renderTaskItem(t))}
+        {done.length > 0 && (
+          <>
+            <button
+              onClick={() => setDoneOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                width: '100%', padding: '8px 4px', marginTop: '4px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#999', fontSize: '12px',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#639922" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="2,5.5 4.5,8.5 10,2.5" />
               </svg>
-            </div>
-            {/* 左スワイプ背景（完了） */}
-            <div style={{
-              position: 'absolute', inset: 0, background: '#639922',
-              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '20px',
-              opacity: swipingId === t.id && swipeX < 0
-                ? Math.min(-swipeX / MAX_SWIPE, 1)
-                : completingSwipe?.id === t.id && completingSwipe.dir === 'left' ? 1 : 0,
-              pointerEvents: 'none',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="2,6.5 5,10 11,3" />
-              </svg>
-            </div>
-          <div
-            className={[
-              'ti',
-              t.done ? 'done-i' : '',
-              t.type === 'timed' ? 'timed-i' : t.type === 'repeat' ? 'repeat-i' : '',
-            ].filter(Boolean).join(' ')}
-            style={{
-              transform: swipingId === t.id
-                ? `translateX(${swipeX}px)`
-                : completingSwipe?.id === t.id
-                  ? `translateX(${completingSwipe.dir === 'right' ? MAX_SWIPE : -MAX_SWIPE}px)`
-                  : 'translateX(0)',
-              transition: swipingId === t.id ? 'none' : 'transform 0.2s ease',
-              marginBottom: 0,
-            }}
-            draggable={sortMode === 'manual'}
-            onDragStart={() => { dragSrc.current = t.id; }}
-            onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
-            onDragLeave={e => e.currentTarget.classList.remove('drag-over')}
-            onDrop={async e => {
-              e.preventDefault();
-              e.currentTarget.classList.remove('drag-over');
-              if (dragSrc.current !== null) await handleDrop(dragSrc.current, t.id);
-            }}
-            onDragEnd={e => { dragSrc.current = null; e.currentTarget.classList.remove('dragging', 'drag-over'); }}
-            onTouchStart={e => onTouchStart(e, t.id)}
-            onTouchMove={onTouchMove}
-            onTouchEnd={() => onTouchEnd(t)}
-          >
-            <div className="dh" style={{ opacity: sortMode === 'manual' ? 1 : 0.3 }}>
-              <span /><span /><span />
-            </div>
-            <div className={`dd dd-${t.diff[0]}`} />
-            <div className="ti-body">
-              <div className={`ti-name${t.done ? ' done' : ''}`}>{t.name}</div>
-              <div className="ti-meta">
-                <span className="tp p-tm">{t.dur}</span>
-                <span className="tp p-ct">{t.cat}</span>
-                {t.type === 'timed' && <span className="tp p-dl2">期限 {t.end_time}</span>}
-                {t.type === 'repeat' && <span className="tp p-rp2">{rLabel(t)}</span>}
-                {t.done && <span className="tp p-dn">完了</span>}
-              </div>
-            </div>
-            <div className="ti-acts">
-              <button className="ab edt" onClick={() => setEditTask(t)}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
-                </svg>
-              </button>
-              <button
-                className={`ab ck${t.done ? ' on' : ''}`}
-                onClick={() => toggleDone(t)}
+              <span style={{ color: '#639922', fontWeight: 600 }}>完了済み（{done.length}件）</span>
+              <svg
+                width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round"
+                style={{ marginLeft: 'auto', transform: doneOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
               >
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="2,6.5 5,10 11,3" />
-                </svg>
-              </button>
-              <button className="ab del" onClick={() => deleteTask(t.id)}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round">
-                  <line x1="3" y1="3" x2="10" y2="10" /><line x1="10" y1="3" x2="3" y2="10" />
-                </svg>
-              </button>
-            </div>
-          </div>
-          </div>
-        ))}
+                <polyline points="2,3.5 5,6.5 8,3.5" />
+              </svg>
+            </button>
+            {doneOpen && done.map(t => renderTaskItem(t))}
+          </>
+        )}
       </div>
 
       <div style={{ marginTop: 'auto', paddingTop: '14px' }}>
