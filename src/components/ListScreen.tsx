@@ -48,6 +48,44 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const [editTask, setEditTask] = useState<Task | null>(null);
   const dragSrc = useRef<number | null>(null);
 
+  // スワイプ管理
+  const SWIPE_THRESHOLD = 72;
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const [swipingId, setSwipingId] = useState<number | null>(null);
+  const [swipeX, setSwipeX] = useState(0);
+  const isHorizontal = useRef(false);
+
+  function onTouchStart(e: React.TouchEvent, id: number) {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    setSwipingId(id);
+    setSwipeX(0);
+    isHorizontal.current = false;
+  }
+
+  function onTouchMove(e: React.TouchEvent) {
+    if (swipingId === null) return;
+    const dx = e.touches[0].clientX - touchStartX.current;
+    const dy = e.touches[0].clientY - touchStartY.current;
+    if (!isHorizontal.current) {
+      if (Math.abs(dx) < Math.abs(dy)) { setSwipingId(null); return; }
+      isHorizontal.current = true;
+    }
+    setSwipeX(Math.max(-160, Math.min(160, dx)));
+  }
+
+  async function onTouchEnd(t: Task) {
+    if (swipingId !== t.id) return;
+    if (swipeX > SWIPE_THRESHOLD) {
+      setEditTask(t);
+    } else if (swipeX < -SWIPE_THRESHOLD) {
+      await toggleDone(t);
+    }
+    setSwipingId(null);
+    setSwipeX(0);
+  }
+
   function getSorted() {
     const b = [...todayTasks];
     if (sortMode === 'deadline') return b.sort((a, c) => {
@@ -112,13 +150,40 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
 
       <div className="task-list">
         {sorted.map(t => (
+          <div key={t.id} style={{ position: 'relative', overflow: 'hidden', borderRadius: '12px', marginBottom: '6px' }}>
+            {/* 右スワイプ背景（編集） */}
+            <div style={{
+              position: 'absolute', inset: 0, background: 'var(--pu)',
+              display: 'flex', alignItems: 'center', paddingLeft: '20px',
+              opacity: swipingId === t.id && swipeX > 0 ? Math.min(swipeX / SWIPE_THRESHOLD, 1) : 0,
+              pointerEvents: 'none',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+              </svg>
+            </div>
+            {/* 左スワイプ背景（完了） */}
+            <div style={{
+              position: 'absolute', inset: 0, background: '#639922',
+              display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '20px',
+              opacity: swipingId === t.id && swipeX < 0 ? Math.min(-swipeX / SWIPE_THRESHOLD, 1) : 0,
+              pointerEvents: 'none',
+            }}>
+              <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="2,6.5 5,10 11,3" />
+              </svg>
+            </div>
           <div
-            key={t.id}
             className={[
               'ti',
               t.done ? 'done-i' : '',
               t.type === 'timed' ? 'timed-i' : t.type === 'repeat' ? 'repeat-i' : '',
             ].filter(Boolean).join(' ')}
+            style={{
+              transform: swipingId === t.id ? `translateX(${swipeX}px)` : 'translateX(0)',
+              transition: swipingId === t.id ? 'none' : 'transform 0.2s ease',
+              marginBottom: 0,
+            }}
             draggable={sortMode === 'manual'}
             onDragStart={() => { dragSrc.current = t.id; }}
             onDragOver={e => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }}
@@ -129,6 +194,9 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
               if (dragSrc.current !== null) await handleDrop(dragSrc.current, t.id);
             }}
             onDragEnd={e => { dragSrc.current = null; e.currentTarget.classList.remove('dragging', 'drag-over'); }}
+            onTouchStart={e => onTouchStart(e, t.id)}
+            onTouchMove={onTouchMove}
+            onTouchEnd={() => onTouchEnd(t)}
           >
             <div className="dh" style={{ opacity: sortMode === 'manual' ? 1 : 0.3 }}>
               <span /><span /><span />
@@ -164,6 +232,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
                 </svg>
               </button>
             </div>
+          </div>
           </div>
         ))}
       </div>
