@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
+import { TaskModal } from './TaskModal';
 import type { Task } from '../types';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -62,6 +63,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calWeekStart, setCalWeekStart] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [editTask, setEditTask] = useState<Task | null>(null);
 
   const td = today();
 
@@ -270,6 +272,15 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                   <div className="dp-meta">{t.dur}{timeStr ? ' · ' + timeStr : ''} · {t.cat}</div>
                 </div>
                 <span className={`dp-status ${statusCls}`}>{statusTxt}</span>
+                <button
+                  className="dp-edit-btn"
+                  onClick={e => { e.stopPropagation(); setEditTask(t); }}
+                  title="編集"
+                >
+                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 2l2 2L4 11H2v-2L9 2z"/>
+                  </svg>
+                </button>
               </div>
             );
           })}
@@ -280,6 +291,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
 
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+      {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

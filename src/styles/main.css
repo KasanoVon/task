@@ -241,6 +241,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .dp-name{font-size:13px;font-weight:600;color:var(--t);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .dp-meta{font-size:11px;color:var(--t2);margin-top:2px;}
 .dp-status{font-size:11px;padding:2px 8px;border-radius:999px;flex-shrink:0;}
+.dp-edit-btn{width:26px;height:26px;border-radius:8px;border:0.5px solid var(--bd);background:var(--card);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--pu-d);flex-shrink:0;margin-left:4px;}
 .dp-s-done{background:var(--gr-l);color:var(--gr-d);}
 .dp-s-pend{background:var(--am-l);color:var(--am-d);}
 .dp-s-dead{background:var(--re-l);color:var(--re-d);}
