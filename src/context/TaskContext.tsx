@@ -128,9 +128,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     const normals = state.tasks.filter(t => !t.done && t.type === 'normal');
     if (normals.length < 2) return;
     const first = normals[0];
+    const second = normals[1];
     const idx = state.tasks.findIndex(t => t.id === first.id);
     const newTasks = [...state.tasks];
-    newTasks.push(newTasks.splice(idx, 1)[0]);
+    // 1つ下（次の未完了タスクの直後）に移動
+    newTasks.splice(idx, 1);
+    const insertAt = newTasks.findIndex(t => t.id === second.id) + 1;
+    newTasks.splice(insertAt, 0, first);
     dispatch({ type: 'REORDER', payload: newTasks });
   }
 
