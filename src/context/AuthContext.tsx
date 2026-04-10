@@ -48,7 +48,7 @@ interface AuthContextValue {
     username: string,
     password: string
   ) => Promise<{ status: 'ok'; recoveryCode: string } | { status: 'taken' | 'server_error' }>;
-  logout: () => void;
+  logout: () => Promise<void>;
   resetPassword: (
     username: string,
     recoveryCode: string,
@@ -154,13 +154,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  function logout() {
-    void fetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...buildAuthHeader(authState.token) },
-    });
+  async function logout() {
+    // UIを先にログアウト状態にして操作性を確保
     dispatch({ type: 'LOGOUT' });
+    try {
+      await fetch(`${API_BASE}/api/auth/logout`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json', ...buildAuthHeader(authState.token) },
+      });
+    } catch {
+      // ネットワークエラーでもUIはログアウト済みのため許容
+    }
   }
 
   async function resetPassword(

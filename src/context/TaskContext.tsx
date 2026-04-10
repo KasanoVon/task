@@ -124,13 +124,12 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'UPDATE', payload: { ...task, done: true } });
     dispatch({ type: 'LOG_COMPLETE', payload: task });
 
-    // 定期タスクは新しいインスタンスを作成
+    // 定期タスクは新しいインスタンスを作成（addTask内でdispatchされるので重複しない）
     if (task.type === 'repeat') {
-      const newTask = await addTask({
+      await addTask({
         name: task.name, diff: task.diff, cat: task.cat, dur: task.dur,
         type: 'repeat', runit: task.runit, rnum: task.rnum, rtime: task.rtime, wdays: task.wdays,
       });
-      dispatch({ type: 'ADD', payload: newTask });
     }
   }
 
