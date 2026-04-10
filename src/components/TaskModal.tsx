@@ -208,10 +208,10 @@ export function TaskModal({ onClose, task }: Props) {
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>実施日</span>
                             <button type="button" onClick={() => setDatePickerOpen(true)} style={pickerBtn}>{taskDate}</button>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>開始・終了</span>
                             <button type="button" onClick={() => setStartTimePickerOpen(true)} style={pickerBtn}>{startTime}</button>
-                            <span style={{ fontSize: '12px', color: 'var(--t2)' }}>〜</span>
+                            <span style={{ fontSize: '12px', color: 'var(--t2)', lineHeight: 1 }}>〜</span>
                             <button type="button" onClick={() => setEndTimePickerOpen(true)} style={pickerBtn}>{endTime}</button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -226,7 +226,7 @@ export function TaskModal({ onClose, task }: Props) {
                 {/* 定期繰り返し */}
                 {ftype === 'repeat' && (
                     <div className="ef open" style={{ gap: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>繰り返し</span>
                             <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>{RUNIT_JP[runit] ?? runit}</button>
                             <input
