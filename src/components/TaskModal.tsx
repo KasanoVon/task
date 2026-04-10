@@ -191,25 +191,19 @@ export function TaskModal({ onClose, task }: Props) {
 
                 {/* 期限あり */}
                 {ftype === 'timed' && (
-                    <div className="ef open">
-                        <span className="flbl">日付</span>
-                        <div className="frow">
-                            <button type="button" onClick={() => setDatePickerOpen(true)} style={pickerBtn}>
-                                {taskDate}
-                            </button>
+                    <div className="ef open" style={{ gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>日付</span>
+                            <button type="button" onClick={() => setDatePickerOpen(true)} style={pickerBtn}>{taskDate}</button>
                         </div>
-                        <span className="flbl">開始・終了</span>
-                        <div className="frow">
-                            <button type="button" onClick={() => setStartTimePickerOpen(true)} style={pickerBtn}>
-                                {startTime}
-                            </button>
-                            <span style={{ fontSize: '12px', color: 'var(--t2)', alignSelf: 'center' }}>〜</span>
-                            <button type="button" onClick={() => setEndTimePickerOpen(true)} style={pickerBtn}>
-                                {endTime}
-                            </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>開始・終了</span>
+                            <button type="button" onClick={() => setStartTimePickerOpen(true)} style={pickerBtn}>{startTime}</button>
+                            <span style={{ fontSize: '12px', color: 'var(--t2)' }}>〜</span>
+                            <button type="button" onClick={() => setEndTimePickerOpen(true)} style={pickerBtn}>{endTime}</button>
                         </div>
-                        <span className="flbl">割り込み通知</span>
-                        <div className="frow">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>割り込み通知</span>
                             <button type="button" onClick={() => setAlertMinPickerOpen(true)} style={pickerBtn}>
                                 {ALERT_LABELS[alertMin] ?? alertMin + '分前'}
                             </button>
@@ -219,26 +213,24 @@ export function TaskModal({ onClose, task }: Props) {
 
                 {/* 定期繰り返し */}
                 {ftype === 'repeat' && (
-                    <div className="ef open">
-                        <span className="flbl">繰り返し</span>
-                        <div className="frow">
-                            <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>
-                                {RUNIT_JP[runit] ?? runit}
-                            </button>
+                    <div className="ef open" style={{ gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>繰り返し</span>
+                            <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>{RUNIT_JP[runit] ?? runit}</button>
                             <input
                                 type="number"
                                 value={rnum}
                                 min={1}
                                 max={99}
-                                style={{ maxWidth: '60px' }}
+                                style={{ maxWidth: '52px', fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', outline: 'none' }}
                                 onChange={e => setRnum(parseInt(e.target.value) || 1)}
                             />
-                            <span style={{ fontSize: '12px', color: 'var(--t2)', alignSelf: 'center' }}>回</span>
+                            <span style={{ fontSize: '12px', color: 'var(--t2)' }}>回</span>
                         </div>
                         {runit === 'week' && (
-                            <>
-                                <span className="flbl">曜日</span>
-                                <div className="wdays" style={{ marginTop: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>曜日</span>
+                                <div className="wdays">
                                     {WDAYS_JP.map((label, idx) => (
                                         <div
                                             key={idx}
@@ -249,27 +241,21 @@ export function TaskModal({ onClose, task }: Props) {
                                         </div>
                                     ))}
                                 </div>
-                            </>
+                            </div>
                         )}
-                        <span className="flbl">通知時刻</span>
-                        <div className="frow">
-                            <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>
-                                {rtime}
-                            </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>通知時刻</span>
+                            <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>{rtime}</button>
                         </div>
                     </div>
                 )}
 
                 {/* 通常タスクの日付指定 */}
                 {ftype === 'normal' && (
-                    <div className="ef open">
-                        <span className="flbl">実施日</span>
-                        <div className="frow">
-                            <button
-                                type="button"
-                                onClick={() => setDatePickerOpen(true)}
-                                style={pickerBtn}
-                            >{taskDate}</button>
+                    <div className="ef open" style={{ gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>実施日</span>
+                            <button type="button" onClick={() => setDatePickerOpen(true)} style={pickerBtn}>{taskDate}</button>
                         </div>
                     </div>
                 )}
