@@ -66,6 +66,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const popRef = useRef<HTMLDivElement>(null);
 
   const todayStr = today();
+  const ydStr = yesterday();
 
   // ListScreenと同じフィルター
   const todayTasks = tasks.filter(t => {
@@ -79,8 +80,17 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const doneN = todayTasks.filter(t => t.done).length;
   const totalN = todayTasks.length;
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
+
+  // 現在アクティブな日またぎ timed タスク（昨日開始・今日 end_time 前）を優先表示
+  const nowHM = now().slice(0, 5);
+  const crossActive = tasks.find(t =>
+    !t.done && t.type === 'timed' &&
+    isCrossMidnight(t.start_time ?? '00:00', t.end_time ?? '23:59') &&
+    t.task_date === ydStr &&
+    nowHM <= (t.end_time ?? '')
+  );
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
-  const currentTask = normalTasks[0] ?? null;
+  const currentTask = crossActive ?? normalTasks[0] ?? null;
 
   useEffect(() => {
     const tick = () => {
