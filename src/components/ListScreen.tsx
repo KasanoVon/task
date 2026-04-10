@@ -49,12 +49,13 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const dragSrc = useRef<number | null>(null);
 
   // スワイプ管理
-  const SWIPE_THRESHOLD = 72;
+  const SWIPE_THRESHOLD = 60;
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const [swipingId, setSwipingId] = useState<number | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const isHorizontal = useRef(false);
+  const confirmed = useRef(false); // 閾値を超えたかどうか
 
   function onTouchStart(e: React.TouchEvent, id: number) {
     touchStartX.current = e.touches[0].clientX;
@@ -62,6 +63,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     setSwipingId(id);
     setSwipeX(0);
     isHorizontal.current = false;
+    confirmed.current = false;
   }
 
   function onTouchMove(e: React.TouchEvent) {
@@ -72,18 +74,24 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       if (Math.abs(dx) < Math.abs(dy)) { setSwipingId(null); return; }
       isHorizontal.current = true;
     }
-    setSwipeX(Math.max(-160, Math.min(160, dx)));
+    const clamped = Math.max(-160, Math.min(160, dx));
+    setSwipeX(clamped);
+    // 右スワイプで閾値超えたら即編集モーダルを開く
+    if (!confirmed.current && clamped > SWIPE_THRESHOLD) {
+      confirmed.current = true;
+    }
   }
 
   async function onTouchEnd(t: Task) {
-    if (swipingId !== t.id) return;
-    if (swipeX > SWIPE_THRESHOLD) {
-      setEditTask(t);
-    } else if (swipeX < -SWIPE_THRESHOLD) {
-      await toggleDone(t);
-    }
+    if (swipingId !== t.id) { return; }
+    const x = swipeX;
     setSwipingId(null);
     setSwipeX(0);
+    if (x > SWIPE_THRESHOLD) {
+      setEditTask(t);
+    } else if (x < -SWIPE_THRESHOLD) {
+      await toggleDone(t);
+    }
   }
 
   function getSorted() {

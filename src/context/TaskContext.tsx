@@ -84,6 +84,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function updateTask(id: number, body: Partial<Task>) {
+    // 楽観的更新（APIレスポンス前に即反映）
+    const current = state.tasks.find(t => t.id === id);
+    if (current) {
+      const optimistic: Task = {
+        ...current,
+        ...body,
+        done: 'done' in body ? Boolean((body as Record<string, unknown>).done) : current.done,
+      };
+      dispatch({ type: 'UPDATE', payload: optimistic });
+    }
     const updated = (await apiFetch('PATCH', `/api/tasks/${id}`, body)) as Task;
     dispatch({ type: 'UPDATE', payload: updated });
   }
