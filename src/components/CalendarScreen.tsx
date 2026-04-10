@@ -291,7 +291,6 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
 
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
-      {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -301,6 +300,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
       </div>
 
       <div style={{ padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+      {editTask && <TaskModal task={editTask} onClose={() => setEditTask(null)} />}
       <div className="cal-nav">
         <button className="cal-nav-btn" onClick={() => calMove(-1)}>‹</button>
         <span className="cal-nav-title">{navTitle()}</span>
