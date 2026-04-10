@@ -66,7 +66,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const popRef = useRef<HTMLDivElement>(null);
 
   const todayStr = today();
-  const ydStr = yesterday();
 
   // ListScreenと同じフィルター
   const todayTasks = tasks.filter(t => {
