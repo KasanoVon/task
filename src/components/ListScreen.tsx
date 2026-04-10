@@ -49,13 +49,15 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const dragSrc = useRef<number | null>(null);
 
   // スワイプ管理
-  const SWIPE_THRESHOLD = 60;
+  const SWIPE_THRESHOLD = 130; // 最後まで（MAX の約80%）で発火
+  const MAX_SWIPE = 160;
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const [swipingId, setSwipingId] = useState<number | null>(null);
   const [swipeX, setSwipeX] = useState(0);
   const isHorizontal = useRef(false);
-  const confirmed = useRef(false); // 閾値を超えたかどうか
+  // スナップ完了アニメーション中のアイテム
+  const [completingSwipe, setCompletingSwipe] = useState<{ id: number; dir: 'left' | 'right' } | null>(null);
 
   function onTouchStart(e: React.TouchEvent, id: number) {
     touchStartX.current = e.touches[0].clientX;
@@ -63,7 +65,6 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     setSwipingId(id);
     setSwipeX(0);
     isHorizontal.current = false;
-    confirmed.current = false;
   }
 
   function onTouchMove(e: React.TouchEvent) {
@@ -74,22 +75,27 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       if (Math.abs(dx) < Math.abs(dy)) { setSwipingId(null); return; }
       isHorizontal.current = true;
     }
-    const clamped = Math.max(-160, Math.min(160, dx));
-    setSwipeX(clamped);
-    // 右スワイプで閾値超えたら即編集モーダルを開く
-    if (!confirmed.current && clamped > SWIPE_THRESHOLD) {
-      confirmed.current = true;
-    }
+    setSwipeX(Math.max(-MAX_SWIPE, Math.min(MAX_SWIPE, dx)));
   }
 
   async function onTouchEnd(t: Task) {
     if (swipingId !== t.id) { return; }
     const x = swipeX;
+    // まずスワイプ中状態を解除（CSSトランジション有効化）
     setSwipingId(null);
     setSwipeX(0);
+
     if (x > SWIPE_THRESHOLD) {
+      // 端まで広げてからモーダル表示
+      setCompletingSwipe({ id: t.id, dir: 'right' });
+      await new Promise<void>(r => setTimeout(r, 220));
+      setCompletingSwipe(null);
       setEditTask(t);
     } else if (x < -SWIPE_THRESHOLD) {
+      // 端まで広げてから完了処理
+      setCompletingSwipe({ id: t.id, dir: 'left' });
+      await new Promise<void>(r => setTimeout(r, 220));
+      setCompletingSwipe(null);
       await toggleDone(t);
     }
   }
@@ -163,7 +169,9 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
             <div style={{
               position: 'absolute', inset: 0, background: 'var(--pu)',
               display: 'flex', alignItems: 'center', paddingLeft: '20px',
-              opacity: swipingId === t.id && swipeX > 0 ? Math.min(swipeX / SWIPE_THRESHOLD, 1) : 0,
+              opacity: swipingId === t.id && swipeX > 0
+                ? Math.min(swipeX / MAX_SWIPE, 1)
+                : completingSwipe?.id === t.id && completingSwipe.dir === 'right' ? 1 : 0,
               pointerEvents: 'none',
             }}>
               <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +182,9 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
             <div style={{
               position: 'absolute', inset: 0, background: '#639922',
               display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: '20px',
-              opacity: swipingId === t.id && swipeX < 0 ? Math.min(-swipeX / SWIPE_THRESHOLD, 1) : 0,
+              opacity: swipingId === t.id && swipeX < 0
+                ? Math.min(-swipeX / MAX_SWIPE, 1)
+                : completingSwipe?.id === t.id && completingSwipe.dir === 'left' ? 1 : 0,
               pointerEvents: 'none',
             }}>
               <svg width="18" height="18" viewBox="0 0 13 13" fill="none" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -188,7 +198,11 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
               t.type === 'timed' ? 'timed-i' : t.type === 'repeat' ? 'repeat-i' : '',
             ].filter(Boolean).join(' ')}
             style={{
-              transform: swipingId === t.id ? `translateX(${swipeX}px)` : 'translateX(0)',
+              transform: swipingId === t.id
+                ? `translateX(${swipeX}px)`
+                : completingSwipe?.id === t.id
+                  ? `translateX(${completingSwipe.dir === 'right' ? MAX_SWIPE : -MAX_SWIPE}px)`
+                  : 'translateX(0)',
               transition: swipingId === t.id ? 'none' : 'transform 0.2s ease',
               marginBottom: 0,
             }}
