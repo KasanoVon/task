@@ -81,16 +81,13 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const totalN = todayTasks.length;
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
 
-  // 現在アクティブな日またぎ timed タスク（昨日開始・今日 end_time 前）を優先表示
-  const nowHM = now().slice(0, 5);
-  const crossActive = tasks.find(t =>
+  // 未完了の timed タスク（昨日以前 = 期限切れ含む日またぎ）を優先表示
+  const pendingTimed = tasks.find(t =>
     !t.done && t.type === 'timed' &&
-    isCrossMidnight(t.start_time ?? '00:00', t.end_time ?? '23:59') &&
-    t.task_date === ydStr &&
-    nowHM <= (t.end_time ?? '')
+    (t.task_date ?? '') < todayStr
   );
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
-  const currentTask = crossActive ?? normalTasks[0] ?? null;
+  const currentTask = pendingTimed ?? normalTasks[0] ?? null;
 
   useEffect(() => {
     const tick = () => {
