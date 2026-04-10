@@ -13,7 +13,7 @@ export interface Task {
   diff: 'easy' | 'mid' | 'hard';
   cat: string;
   dur: string;
-  type: 'normal' | 'timed' | 'repeat';
+  type: 'normal' | 'timed' | 'repeat' | 'stock';
   sort_order: number;
   done: boolean;
   task_date?: string;

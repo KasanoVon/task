@@ -35,18 +35,22 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   const { state, updateTask, deleteTask, reorderTasks } = useTask();
   const { tasks } = state;
   const td = todayStr();
-  // 今日のタスクのみ表示
+  // 今日のタスクのみ表示（ストックは除外）
   const todayTasks = tasks.filter(t => {
+    if (t.type === 'stock') return false;
     if (t.type === 'timed') return t.task_date === td;
     if (t.type === 'repeat') return true;
     // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日
     if (t.done) return t.task_date === td;
     return !t.task_date || t.task_date === td;
   });
+  // ストックタスク
+  const stockTasks = tasks.filter(t => t.type === 'stock');
   const [sortMode, setSortMode] = useState<SortMode>('manual');
   const [formOpen, setFormOpen] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [doneOpen, setDoneOpen] = useState(false);
+  const [stockOpen, setStockOpen] = useState(false);
   const dragSrc = useRef<number | null>(null);
 
   // スワイプ管理
@@ -264,6 +268,31 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
 
       <div className="task-list">
         {undone.map(t => renderTaskItem(t))}
+        {stockTasks.length > 0 && (
+          <>
+            <button
+              onClick={() => setStockOpen(o => !o)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                width: '100%', padding: '8px 4px', marginTop: '4px',
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#7F77DD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="4" width="8" height="6" rx="1" /><path d="M4 4V3a2 2 0 014 0v1" />
+              </svg>
+              <span style={{ color: '#7F77DD', fontWeight: 600 }}>ストック（{stockTasks.length}件）</span>
+              <svg
+                width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round"
+                style={{ marginLeft: 'auto', transform: stockOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+              >
+                <polyline points="2,3.5 5,6.5 8,3.5" />
+              </svg>
+            </button>
+            {stockOpen && stockTasks.map(t => renderTaskItem(t))}
+          </>
+        )}
         {done.length > 0 && (
           <>
             <button

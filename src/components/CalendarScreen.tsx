@@ -27,6 +27,7 @@ function isRepeatOnDate(t: Task, ds: string) {
 }
 
 function taskOnDate(t: Task, ds: string) {
+  if (t.type === 'stock') return false;
   if (t.type === 'timed') return t.task_date === ds;
   if (t.type === 'repeat') return isRepeatOnDate(t, ds);
   // 通常タスク: 日付ありはその日

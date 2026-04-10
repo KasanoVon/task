@@ -16,7 +16,7 @@ interface Props {
     task?: Task; // 既存タスクを渡すと編集モードになる
 }
 
-type TaskType = 'normal' | 'timed' | 'repeat';
+type TaskType = 'normal' | 'timed' | 'repeat' | 'stock';
 
 function today() {
     const d = new Date();
@@ -70,6 +70,8 @@ export function TaskModal({ onClose, task }: Props) {
             body = { ...base, type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
         } else if (ftype === 'repeat') {
             body = { ...base, type: 'repeat', runit, rnum, rtime, wdays };
+        } else if (ftype === 'stock') {
+            body = { ...base, type: 'stock' };
         } else {
             body = { ...base, type: 'normal', task_date: taskDate || today() };
         }
@@ -178,13 +180,13 @@ export function TaskModal({ onClose, task }: Props) {
                     </button>
                 </div>
                 <div className="type-tabs">
-                    {(['normal', 'timed', 'repeat'] as TaskType[]).map(t => (
+                    {(['normal', 'timed', 'repeat', 'stock'] as TaskType[]).map(t => (
                         <button
                             key={t}
                             className={`ttab${ftype === t ? ' on' : ''}`}
                             onClick={() => setFtype(t)}
                         >
-                            {t === 'normal' ? '通常' : t === 'timed' ? '期限あり' : '定期繰り返し'}
+                            {t === 'normal' ? '通常' : t === 'timed' ? '期限あり' : t === 'repeat' ? '定期繰り返し' : 'ストック'}
                         </button>
                     ))}
                 </div>
