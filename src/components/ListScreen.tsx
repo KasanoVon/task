@@ -16,6 +16,23 @@ function todayStr() {
   const pad = (n: number) => String(n).padStart(2, '0');
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function nowHHMM() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+// 日またぎタスク（end_time < start_time）かつ昨日開始で今日まだ終わっていないか
+function isCrossMidnightActive(t: Task): boolean {
+  if (t.type !== 'timed' || t.done) return false;
+  if ((t.end_time ?? '23:59') >= (t.start_time ?? '00:00')) return false;
+  return t.task_date === yesterdayStr() && nowHHMM() <= (t.end_time ?? '00:00');
+}
 
 type SortMode = 'manual' | 'deadline' | 'diff' | 'time' | 'cat';
 
@@ -217,8 +234,8 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
               <span className="tp p-tm">{t.dur}</span>
               <span className="tp p-ct">{t.cat}</span>
               {t.type === 'timed' && (
-                <span className={`tp ${!t.done && (t.task_date ?? '') < td ? 'p-dl2-exp' : 'p-dl2'}`}>
-                  {!t.done && (t.task_date ?? '') < td ? '期限切れ' : '期限 ' + (t.end_time ?? '')}
+                <span className={`tp ${!t.done && (t.task_date ?? '') < td && !isCrossMidnightActive(t) ? 'p-dl2-exp' : 'p-dl2'}`}>
+                  {!t.done && (t.task_date ?? '') < td && !isCrossMidnightActive(t) ? '期限切れ' : '期限 ' + (t.end_time ?? '')}
                 </span>
               )}
               {t.type === 'repeat' && <span className="tp p-rp2">{rLabel(t)}</span>}

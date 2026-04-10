@@ -213,6 +213,9 @@ export function TaskModal({ onClose, task }: Props) {
                             <button type="button" onClick={() => setStartTimePickerOpen(true)} style={pickerBtn}>{startTime}</button>
                             <span style={{ fontSize: '12px', color: 'var(--t2)', lineHeight: 1 }}>〜</span>
                             <button type="button" onClick={() => setEndTimePickerOpen(true)} style={pickerBtn}>{endTime}</button>
+                            {endTime < startTime && (
+                                <span style={{ fontSize: '11px', color: 'var(--co)', marginLeft: '2px' }}>翌日まで</span>
+                            )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>割り込み通知</span>

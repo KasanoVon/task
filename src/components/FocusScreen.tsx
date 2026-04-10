@@ -11,15 +11,31 @@ function today() {
   const d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
+function yesterday() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+function isCrossMidnight(startTime: string, endTime: string) {
+  return endTime < startTime;
+}
 function addMin(t: string, m: number) {
   const [h, mn] = t.split(':').map(Number);
   const tot = h * 60 + mn + m;
   return pad(Math.floor(tot / 60) % 24) + ':' + pad(tot % 60);
 }
-function tLeft(a: string, b: string) {
+function tLeft(a: string, b: string, startTime?: string) {
   const [ah, am] = a.split(':').map(Number);
   const [bh, bm] = b.split(':').map(Number);
-  const d = bh * 60 + bm - (ah * 60 + am);
+  const aMins = ah * 60 + am;
+  const bMins = bh * 60 + bm;
+  let d: number;
+  if (startTime && isCrossMidnight(startTime, b)) {
+    const [sh, sm] = startTime.split(':').map(Number);
+    d = aMins >= sh * 60 + sm ? (24 * 60 - aMins) + bMins : bMins - aMins;
+  } else {
+    d = bMins - aMins;
+  }
   return d <= 0 ? '期限切れ' : d < 60 ? d + '分' : Math.floor(d / 60) + '時間' + (d % 60) + '分';
 }
 function rLabel(t: Task) {
@@ -72,10 +88,18 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       setClockStr(n);
 
       // 次の予定：時刻付きタスク（timed/repeat）を優先、なければ次の通常タスク
-      const timedNext = tasks.filter(t => !t.done && (
-        (t.type === 'timed' && t.task_date === today() && (t.end_time ?? '') > n) ||
-        (t.type === 'repeat' && (t.rtime ?? '') > n)
-      ));
+      const td = today();
+      const yd = yesterday();
+      const timedNext = tasks.filter(t => {
+        if (t.done) return false;
+        if (t.type === 'timed') {
+          const cross = isCrossMidnight(t.start_time ?? '00:00', t.end_time ?? '23:59');
+          if (!cross) return t.task_date === td && (t.end_time ?? '') > n;
+          // 日またぎ: 今日開始（終了は明日）or 昨日開始（終了が今日の n より後）
+          return t.task_date === td || (t.task_date === yd && (t.end_time ?? '') > n);
+        }
+        return t.type === 'repeat' && (t.rtime ?? '') > n;
+      });
       if (timedNext.length > 0) {
         timedNext.sort((a, b) => {
           const ta = a.type === 'timed' ? (a.end_time ?? '') : (a.rtime ?? '');
@@ -96,9 +120,20 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         }
       }
 
-      // 割り込み: 期限あり
-      const u = tasks.find(t => !t.done && t.type === 'timed' && t.task_date === today() &&
-        n >= addMin(t.end_time ?? '23:59', -(t.alert_min ?? 15)) && n <= (t.end_time ?? ''));
+      // 割り込み: 期限あり（日またぎ対応）
+      const u = tasks.find(t => {
+        if (t.done || t.type !== 'timed') return false;
+        const cross = isCrossMidnight(t.start_time ?? '00:00', t.end_time ?? '23:59');
+        if (!cross) {
+          return t.task_date === td &&
+            n >= addMin(t.end_time ?? '23:59', -(t.alert_min ?? 15)) &&
+            n <= (t.end_time ?? '');
+        }
+        // 日またぎ: アラートは翌日（task_date が昨日）の end_time 直前
+        return t.task_date === yd &&
+          n >= addMin(t.end_time ?? '00:00', -(t.alert_min ?? 15)) &&
+          n <= (t.end_time ?? '');
+      });
       setIntU(u ?? null);
 
       // 割り込み: 定期
@@ -169,7 +204,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
             </svg>
           </div>
           <div className="int-body">
-            <div className="int-badge ib-u">{tLeft(clockStr, intU.end_time ?? '')}で期限切れ！</div>
+            <div className="int-badge ib-u">{tLeft(clockStr, intU.end_time ?? '', intU.start_time)}で期限切れ！</div>
             <div className="int-name">{intU.name}</div>
             <div className="int-sub">終了：{intU.end_time}まで</div>
           </div>

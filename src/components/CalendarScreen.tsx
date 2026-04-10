@@ -29,7 +29,15 @@ function isRepeatOnDate(t: Task, ds: string) {
 
 function taskOnDate(t: Task, ds: string) {
   if (t.type === 'stock') return false;
-  if (t.type === 'timed') return t.task_date === ds;
+  if (t.type === 'timed') {
+    if (t.task_date === ds) return true;
+    // 日またぎ（end_time < start_time）: 翌日にも表示
+    if ((t.end_time ?? '23:59') < (t.start_time ?? '00:00')) {
+      const nextDs = fmtDate(new Date(new Date(t.task_date + 'T00:00:00').getTime() + 86400000));
+      return nextDs === ds;
+    }
+    return false;
+  }
   if (t.type === 'repeat') return isRepeatOnDate(t, ds);
   // 通常タスク: 日付ありはその日
   if (t.task_date) return t.task_date === ds;
