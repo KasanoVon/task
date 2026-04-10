@@ -3,6 +3,12 @@ import type { Task } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
+function todayStr() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+}
+
 // ── 状態 ─────────────────────────────────────────────────
 
 interface TaskState {
@@ -112,7 +118,9 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function completeTask(task: Task) {
-    await apiFetch('PATCH', `/api/tasks/${task.id}`, { done: 1 });
+    // 通常タスクで日付未設定の場合、クライアント側の今日の日付を渡す（サーバーのタイムゾーン差異を回避）
+    const extra = (task.type === 'normal' && !task.task_date) ? { task_date: todayStr() } : {};
+    await apiFetch('PATCH', `/api/tasks/${task.id}`, { done: 1, ...extra });
     // ログ記録失敗はUIに影響させない
     apiFetch('POST', '/api/logs', {
       task_id: task.id,

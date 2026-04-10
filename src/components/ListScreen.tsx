@@ -38,7 +38,8 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   // 今日のタスクのみ表示（ストックは除外）
   const todayTasks = tasks.filter(t => {
     if (t.type === 'stock') return false;
-    if (t.type === 'timed') return t.task_date === td;
+    // 期限ありは今日 + 未完了の期限切れ（翌日以降も表示）
+    if (t.type === 'timed') return t.task_date === td || (!t.done && (t.task_date ?? '') < td);
     if (t.type === 'repeat') return true;
     // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日
     if (t.done) return t.task_date === td;
@@ -135,7 +136,13 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   }
 
   async function toggleDone(t: Task) {
-    await updateTask(t.id, { done: !t.done ? 1 : 0 } as unknown as Partial<Task>);
+    // 通常タスクで日付未設定の場合、クライアント側の今日の日付を渡す（サーバーのタイムゾーン差異を回避）
+    const extra = (!t.done && t.type === 'normal' && !t.task_date) ? { task_date: td } : {};
+    await updateTask(t.id, { done: !t.done ? 1 : 0, ...extra } as unknown as Partial<Task>);
+  }
+
+  async function promoteToToday(t: Task) {
+    await updateTask(t.id, { type: 'normal', task_date: td } as unknown as Partial<Task>);
   }
 
   const sorted = getSorted();
@@ -209,27 +216,41 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
             <div className="ti-meta">
               <span className="tp p-tm">{t.dur}</span>
               <span className="tp p-ct">{t.cat}</span>
-              {t.type === 'timed' && <span className="tp p-dl2">期限 {t.end_time}</span>}
+              {t.type === 'timed' && (
+                <span className={`tp ${!t.done && (t.task_date ?? '') < td ? 'p-dl2-exp' : 'p-dl2'}`}>
+                  {!t.done && (t.task_date ?? '') < td ? '期限切れ' : '期限 ' + (t.end_time ?? '')}
+                </span>
+              )}
               {t.type === 'repeat' && <span className="tp p-rp2">{rLabel(t)}</span>}
               {t.done && <span className="tp p-dn">完了</span>}
             </div>
           </div>
           <div className="ti-acts">
-            <button className="ab edt" onClick={() => setEditTask(t)}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <button className="ab edt" onClick={() => setEditTask(t)} aria-label="編集">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
               </svg>
             </button>
-            <button
-              className={`ab ck${t.done ? ' on' : ''}`}
-              onClick={() => toggleDone(t)}
-            >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="2,6.5 5,10 11,3" />
-              </svg>
-            </button>
-            <button className="ab del" onClick={() => deleteTask(t.id)}>
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round">
+            {t.type === 'stock' ? (
+              <button
+                className="ab"
+                onClick={() => promoteToToday(t)}
+                aria-label="今日やる"
+                style={{ fontSize: '10px', fontWeight: 700, color: '#D4916E', minWidth: '32px' }}
+              >今日</button>
+            ) : (
+              <button
+                className={`ab ck${t.done ? ' on' : ''}`}
+                onClick={() => toggleDone(t)}
+                aria-label={t.done ? '未完了に戻す' : '完了にする'}
+              >
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="2,6.5 5,10 11,3" />
+                </svg>
+              </button>
+            )}
+            <button className="ab del" onClick={() => deleteTask(t.id)} aria-label="削除">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
                 <line x1="3" y1="3" x2="10" y2="10" /><line x1="10" y1="3" x2="3" y2="10" />
               </svg>
             </button>

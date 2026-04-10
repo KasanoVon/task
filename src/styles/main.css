@@ -108,6 +108,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .p-tm{color:var(--t2);}
 .p-ct{color:var(--t2);}
 .p-dl2{color:var(--pu);}
+.p-dl2-exp{color:var(--re);font-weight:600;}
 .p-rp2{color:var(--t2);}
 .p-dn{color:var(--gr);}
 .ti-acts{display:flex;gap:4px;flex-shrink:0;}

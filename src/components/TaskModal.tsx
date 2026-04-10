@@ -62,8 +62,14 @@ export function TaskModal({ onClose, task }: Props) {
         setWdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
     }
 
+    const [saveError, setSaveError] = useState<string | null>(null);
+
     async function handleSave() {
-        if (!name.trim()) return;
+        setSaveError(null);
+        if (!name.trim()) {
+            setSaveError('タスク名を入力してください');
+            return;
+        }
         const base = { name: name.trim(), diff, cat, dur };
         let body: Partial<Task> = {};
         if (ftype === 'timed') {
@@ -75,12 +81,16 @@ export function TaskModal({ onClose, task }: Props) {
         } else {
             body = { ...base, type: 'normal', task_date: taskDate || today() };
         }
-        if (isEdit) {
-            await updateTask(task!.id, body);
-        } else {
-            await addTask(body);
+        try {
+            if (isEdit) {
+                await updateTask(task!.id, body);
+            } else {
+                await addTask(body);
+            }
+            onClose();
+        } catch {
+            setSaveError('保存に失敗しました。もう一度お試しください。');
         }
-        onClose();
     }
 
     // ボタン共通スタイル
@@ -262,6 +272,11 @@ export function TaskModal({ onClose, task }: Props) {
                     </div>
                 )}
 
+                {saveError && (
+                    <div style={{ color: '#E24B4A', fontSize: '12px', marginBottom: '4px', padding: '0 2px' }}>
+                        {saveError}
+                    </div>
+                )}
                 <div className="fbtns">
                     <button className="fcancel" onClick={onClose}>キャンセル</button>
                     <button className="fsave" onClick={handleSave}>{isEdit ? '保存する' : '追加する'}</button>

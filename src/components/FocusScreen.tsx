@@ -54,7 +54,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   // ListScreenと同じフィルター
   const todayTasks = tasks.filter(t => {
     if (t.type === 'stock') return false;
-    if (t.type === 'timed') return t.task_date === todayStr;
+    if (t.type === 'timed') return t.task_date === todayStr || (!t.done && (t.task_date ?? '') < todayStr);
     if (t.type === 'repeat') return true;
     // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日
     if (t.done) return t.task_date === todayStr;
@@ -164,7 +164,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       {intU && !dimmedU && (
         <div className="interrupt int-urgent active">
           <div className="int-icon int-icon-u">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="8" cy="8" r="6"/><line x1="8" y1="4.5" x2="8" y2="8.5"/><circle cx="8" cy="11" r=".7" fill="#fff"/>
             </svg>
           </div>
@@ -184,7 +184,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       {intR && !dimmedR && (
         <div className="interrupt int-routine active">
           <div className="int-icon int-icon-r">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
               <circle cx="8" cy="8" r="6"/><polyline points="8,4.5 8,8 11,9.5"/>
             </svg>
           </div>
