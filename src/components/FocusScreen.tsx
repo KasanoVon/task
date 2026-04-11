@@ -243,7 +243,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       )}
 
       {/* 定期タスク割り込み */}
-      {intR && !dimmedR && (
+      {intR && !dimmedR && intR.id !== focusRepeatId && intR.id !== nextRepeatId && (
         <div className="interrupt int-routine active">
           <div className="int-icon int-icon-r">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
