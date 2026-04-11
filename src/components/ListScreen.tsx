@@ -59,9 +59,8 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     if (t.type === 'timed') return t.task_date === td || (!t.done && (t.task_date ?? '') < td);
     if (t.type === 'repeat') {
       if (t.done) return true;
-      // 完了済み兄弟がある場合は非表示（完了直後の新インスタンスを隠す）
+      if (t.task_date && t.task_date > td) return false; // 開始日未到達
       if (tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime)) return false;
-      // 未完了の重複がある場合は最小IDのみ表示（完了取り消し後の重複防止）
       return !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime);
     }
     // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日

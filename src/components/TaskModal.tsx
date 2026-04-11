@@ -57,6 +57,8 @@ export function TaskModal({ onClose, task }: Props) {
     const [wdays, setWdays] = useState<number[]>(task?.wdays ?? []);
     const [rtimePickerOpen, setRtimePickerOpen] = useState(false);
     const [runitPickerOpen, setRunitPickerOpen] = useState(false);
+    const [repeatDate, setRepeatDate] = useState((task?.type === 'repeat' ? task?.task_date : undefined) ?? '');
+    const [repeatDatePickerOpen, setRepeatDatePickerOpen] = useState(false);
 
     function toggleWday(d: number) {
         setWdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -75,7 +77,7 @@ export function TaskModal({ onClose, task }: Props) {
         if (ftype === 'timed') {
             body = { ...base, type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
         } else if (ftype === 'repeat') {
-            body = { ...base, type: 'repeat', runit, rnum, rtime, wdays };
+            body = { ...base, type: 'repeat', runit, rnum, rtime, wdays, ...(repeatDate ? { task_date: repeatDate } : {}) };
         } else if (ftype === 'stock') {
             body = { ...base, type: 'stock' };
         } else {
@@ -128,6 +130,13 @@ export function TaskModal({ onClose, task }: Props) {
                 value={taskDate}
                 onSelect={v => { setTaskDate(v); setDatePickerOpen(false); }}
                 onCancel={() => setDatePickerOpen(false)}
+            />
+        )}
+        {repeatDatePickerOpen && (
+            <DatePicker
+                value={repeatDate || today()}
+                onSelect={v => { setRepeatDate(v); setRepeatDatePickerOpen(false); }}
+                onCancel={() => setRepeatDatePickerOpen(false)}
             />
         )}
         {startTimePickerOpen && (
@@ -261,6 +270,18 @@ export function TaskModal({ onClose, task }: Props) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>通知時刻</span>
                             <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>{rtime}</button>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>開始日</span>
+                            <button type="button" onClick={() => setRepeatDatePickerOpen(true)} style={pickerBtn}>
+                                {repeatDate || '指定なし'}
+                            </button>
+                            {repeatDate && (
+                                <button type="button" onClick={() => setRepeatDate('')}
+                                    style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 8px', cursor: 'pointer' }}>
+                                    なし
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

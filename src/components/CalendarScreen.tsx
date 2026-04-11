@@ -13,6 +13,7 @@ function fmtDate(d: Date) {
 }
 
 function isRepeatOnDate(t: Task, ds: string) {
+  if (t.task_date && ds < t.task_date) return false; // 開始日未到達
   const d = new Date(ds + 'T00:00:00');
   if (t.runit === 'day' || t.runit === 'hour') return true;
   if (t.runit === 'week') {

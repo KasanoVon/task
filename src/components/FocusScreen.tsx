@@ -122,6 +122,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     if (t.type === 'timed') return t.task_date === todayStr || (!t.done && (t.task_date ?? '') < todayStr);
     if (t.type === 'repeat') {
       if (t.done) return true;
+      if (t.task_date && t.task_date > todayStr) return false; // 開始日未到達
       if (tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime)) return false;
       return !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime);
     }
@@ -199,7 +200,9 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
 
       // 割り込み: 定期
       const r = tasks.find(t =>
-        !t.done && t.type === 'repeat' && n >= (t.rtime ?? '') && n <= addMin(t.rtime ?? '', 2) &&
+        !t.done && t.type === 'repeat' &&
+        (!t.task_date || t.task_date <= td) &&
+        n >= (t.rtime ?? '') && n <= addMin(t.rtime ?? '', 2) &&
         !tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime) &&
         !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime)
       );
