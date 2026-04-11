@@ -57,7 +57,11 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     if (t.type === 'stock') return false;
     // 期限ありは今日 + 未完了の期限切れ（翌日以降も表示）
     if (t.type === 'timed') return t.task_date === td || (!t.done && (t.task_date ?? '') < td);
-    if (t.type === 'repeat') return true;
+    if (t.type === 'repeat') {
+      if (t.done) return true;
+      // 未完了: 同名・同rtimeで完了済みの兄弟がある場合は非表示（完了直後の重複防止）
+      return !tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime);
+    }
     // 通常タスク: 完了済みは今日のみ、未完了は日付なし or 今日
     if (t.done) return t.task_date === td;
     return !t.task_date || t.task_date === td;
