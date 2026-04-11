@@ -80,10 +80,10 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const totalN = todayTasks.length;
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
 
-  // 未完了の timed タスク（昨日以前 = 期限切れ含む日またぎ）を優先表示
+  // 未完了の timed タスク（今日・昨日以前）を優先表示
   const pendingTimed = tasks.find(t =>
     !t.done && t.type === 'timed' &&
-    (t.task_date ?? '') < todayStr
+    (t.task_date ?? '') <= todayStr
   );
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
   const currentTask = pendingTimed ?? normalTasks[0] ?? null;
