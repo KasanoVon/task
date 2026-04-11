@@ -63,6 +63,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [dimmedR, setDimmedR] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [burst, setBurst] = useState(false);
+  const [focusRepeat, setFocusRepeat] = useState<Task | null>(null);
+  const [nextRepeat, setNextRepeat] = useState<Task | null>(null);
   const popRef = useRef<HTMLDivElement>(null);
 
   const todayStr = today();
@@ -86,7 +88,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     (t.task_date ?? '') <= todayStr
   );
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
-  const currentTask = pendingTimed ?? normalTasks[0] ?? null;
+  const currentTask = focusRepeat ?? pendingTimed ?? normalTasks[0] ?? nextRepeat ?? null;
 
   useEffect(() => {
     const tick = () => {
@@ -169,13 +171,14 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     try {
       await completeTask(currentTask);
     } finally {
+      if (focusRepeat && currentTask.id === focusRepeat.id) setFocusRepeat(null);
+      if (nextRepeat && currentTask.id === nextRepeat.id) setNextRepeat(null);
       setCompleting(false);
     }
   }
 
-  function doInt(_task: Task, which: 'u' | 'r') {
-    if (which === 'u') setDimmedU(true);
-    else setDimmedR(true);
+  function doIntU() {
+    setDimmedU(true);
   }
 
   const d = new Date();
@@ -215,7 +218,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
             <div className="int-sub">終了：{intU.end_time}まで</div>
           </div>
           <div className="int-acts">
-            <button className="ib ib-do" onClick={() => doInt(intU, 'u')}>今やる</button>
+            <button className="ib ib-do" onClick={doIntU}>今やる</button>
             <button className="ib ib-later" onClick={() => setDimmedU(true)}>後で</button>
           </div>
         </div>
@@ -235,8 +238,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
             <div className="int-sub">{rLabel(intR)}</div>
           </div>
           <div className="int-acts">
-            <button className="ib ib-do-r" onClick={() => doInt(intR, 'r')}>今やる</button>
-            <button className="ib ib-later" onClick={() => setDimmedR(true)}>後で</button>
+            <button className="ib ib-do-r" onClick={() => { setFocusRepeat(intR); setDimmedR(true); }}>今やる</button>
+            <button className="ib ib-later" onClick={() => { setNextRepeat(intR); setDimmedR(true); }}>後で</button>
           </div>
         </div>
       )}
@@ -277,7 +280,15 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           </div>
           <div className="pop fly" ref={popRef}>完了！</div>
           <button
-            onClick={skipTask}
+            onClick={() => {
+              if (focusRepeat && currentTask?.id === focusRepeat.id) {
+                setFocusRepeat(null);
+              } else if (nextRepeat && currentTask?.id === nextRepeat.id) {
+                setNextRepeat(null);
+              } else {
+                skipTask();
+              }
+            }}
             style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 10px', cursor: 'pointer' }}
           >後で</button>
           <div className="f-hint">今やること</div>
