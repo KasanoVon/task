@@ -63,9 +63,27 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [dimmedR, setDimmedR] = useState(false);
   const [completing, setCompleting] = useState(false);
   const [burst, setBurst] = useState(false);
-  const [focusRepeat, setFocusRepeat] = useState<Task | null>(null);
-  const [nextRepeat, setNextRepeat] = useState<Task | null>(null);
+  const [focusRepeatId, setFocusRepeatId] = useState<number | null>(() => {
+    const v = localStorage.getItem('focusRepeatId');
+    return v ? Number(v) : null;
+  });
+  const [nextRepeatId, setNextRepeatId] = useState<number | null>(() => {
+    const v = localStorage.getItem('nextRepeatId');
+    return v ? Number(v) : null;
+  });
   const popRef = useRef<HTMLDivElement>(null);
+
+  const focusRepeat = focusRepeatId != null ? (tasks.find(t => t.id === focusRepeatId) ?? null) : null;
+  const nextRepeat = nextRepeatId != null ? (tasks.find(t => t.id === nextRepeatId) ?? null) : null;
+
+  function setFocusRepeat(task: Task | null) {
+    if (task) { setFocusRepeatId(task.id); localStorage.setItem('focusRepeatId', String(task.id)); }
+    else { setFocusRepeatId(null); localStorage.removeItem('focusRepeatId'); }
+  }
+  function setNextRepeat(task: Task | null) {
+    if (task) { setNextRepeatId(task.id); localStorage.setItem('nextRepeatId', String(task.id)); }
+    else { setNextRepeatId(null); localStorage.removeItem('nextRepeatId'); }
+  }
 
   const todayStr = today();
 
