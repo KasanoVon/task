@@ -75,6 +75,9 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     const v = localStorage.getItem('nextRepeatTriggerId');
     return v ? Number(v) : null;
   });
+  const [nextRepeatRtime, setNextRepeatRtime] = useState<string | null>(() => {
+    return localStorage.getItem('nextRepeatRtime');
+  });
   const popRef = useRef<HTMLDivElement>(null);
 
   const focusRepeat = focusRepeatId != null ? (tasks.find(t => t.id === focusRepeatId) ?? null) : null;
@@ -87,15 +90,28 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   function setNextRepeat(task: Task | null, triggerId?: number | null) {
     if (task) {
       setNextRepeatId(task.id); localStorage.setItem('nextRepeatId', String(task.id));
+      const rtime = task.rtime ?? null;
+      setNextRepeatRtime(rtime);
+      if (rtime) localStorage.setItem('nextRepeatRtime', rtime); else localStorage.removeItem('nextRepeatRtime');
       const tid = triggerId ?? null;
       setNextRepeatTriggerId(tid);
       if (tid != null) localStorage.setItem('nextRepeatTriggerId', String(tid));
       else localStorage.removeItem('nextRepeatTriggerId');
     } else {
       setNextRepeatId(null); localStorage.removeItem('nextRepeatId');
+      setNextRepeatRtime(null); localStorage.removeItem('nextRepeatRtime');
       setNextRepeatTriggerId(null); localStorage.removeItem('nextRepeatTriggerId');
     }
   }
+
+  // nextRepeat の rtime が変更されたらクリア（新しい時刻で通知が発火するように）
+  useEffect(() => {
+    if (nextRepeat != null && nextRepeatRtime != null && nextRepeat.rtime !== nextRepeatRtime) {
+      setNextRepeatId(null); localStorage.removeItem('nextRepeatId');
+      setNextRepeatRtime(null); localStorage.removeItem('nextRepeatRtime');
+      setNextRepeatTriggerId(null); localStorage.removeItem('nextRepeatTriggerId');
+    }
+  }, [nextRepeat, nextRepeatRtime]);
 
   const todayStr = today();
 
