@@ -250,9 +250,28 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       {/* フォーカスカード */}
       {currentTask ? (
         <div className={`focus-card${currentTask.type === 'timed' ? ' is-timed' : currentTask.type === 'repeat' ? ' is-repeat' : ''}`} style={{ position: 'relative' }}>
-          {currentTask.type === 'timed' && (
-            <div className="dl-ribbon">終了 {currentTask.end_time} まで</div>
-          )}
+          {currentTask.type === 'timed' && (() => {
+            const [sh, sm] = (currentTask.start_time ?? '00:00').split(':').map(Number);
+            const [eh, em] = (currentTask.end_time ?? '23:59').split(':').map(Number);
+            const [ch, cm] = clockStr.slice(0, 5).split(':').map(Number);
+            const startMins = sh * 60 + sm;
+            const endMins = eh * 60 + em;
+            const curMins = ch * 60 + cm;
+            const cross = endMins < startMins;
+            const totalMins = cross ? (24 * 60 - startMins) + endMins : endMins - startMins;
+            const elapsedMins = cross
+              ? (curMins >= startMins ? curMins - startMins : (24 * 60 - startMins) + curMins)
+              : Math.max(0, curMins - startMins);
+            const pct = totalMins > 0 ? Math.min(100, Math.round(elapsedMins / totalMins * 100)) : 0;
+            return (
+              <div className="dl-ribbon" style={{ padding: 0, overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: 0, left: 0, height: '100%', width: pct + '%', background: 'var(--co)', opacity: 0.4, transition: 'width 1s linear' }} />
+                <span style={{ position: 'relative', display: 'block', padding: '5px', textAlign: 'center' }}>
+                  終了 {currentTask.end_time} まで（{pct}%）
+                </span>
+              </div>
+            );
+          })()}
           <div className="burst">
             <div className={`bring${burst ? ' go' : ''}`} />
           </div>
