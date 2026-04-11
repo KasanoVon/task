@@ -52,7 +52,7 @@ interface Props {
 }
 
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
-  const { state, completeTask, skipTask } = useTask();
+  const { state, completeTask, skipTask, reorderTasks } = useTask();
   const { tasks } = state;
 
   const [clockStr, setClockStr] = useState(now());
@@ -71,6 +71,10 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     const v = localStorage.getItem('nextRepeatId');
     return v ? Number(v) : null;
   });
+  const [nextRepeatTriggerId, setNextRepeatTriggerId] = useState<number | null>(() => {
+    const v = localStorage.getItem('nextRepeatTriggerId');
+    return v ? Number(v) : null;
+  });
   const popRef = useRef<HTMLDivElement>(null);
 
   const focusRepeat = focusRepeatId != null ? (tasks.find(t => t.id === focusRepeatId) ?? null) : null;
@@ -80,9 +84,17 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     if (task) { setFocusRepeatId(task.id); localStorage.setItem('focusRepeatId', String(task.id)); }
     else { setFocusRepeatId(null); localStorage.removeItem('focusRepeatId'); }
   }
-  function setNextRepeat(task: Task | null) {
-    if (task) { setNextRepeatId(task.id); localStorage.setItem('nextRepeatId', String(task.id)); }
-    else { setNextRepeatId(null); localStorage.removeItem('nextRepeatId'); }
+  function setNextRepeat(task: Task | null, triggerId?: number | null) {
+    if (task) {
+      setNextRepeatId(task.id); localStorage.setItem('nextRepeatId', String(task.id));
+      const tid = triggerId ?? null;
+      setNextRepeatTriggerId(tid);
+      if (tid != null) localStorage.setItem('nextRepeatTriggerId', String(tid));
+      else localStorage.removeItem('nextRepeatTriggerId');
+    } else {
+      setNextRepeatId(null); localStorage.removeItem('nextRepeatId');
+      setNextRepeatTriggerId(null); localStorage.removeItem('nextRepeatTriggerId');
+    }
   }
 
   const todayStr = today();
@@ -110,7 +122,9 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     (t.task_date ?? '') <= todayStr
   );
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
-  const currentTask = focusRepeat ?? pendingTimed ?? normalTasks[0] ?? nextRepeat ?? null;
+  // トリガータスクが完了済みなら nextRepeat を通常タスクより優先
+  const triggerDone = nextRepeatTriggerId != null && !tasks.some(t => t.id === nextRepeatTriggerId && !t.done);
+  const currentTask = focusRepeat ?? pendingTimed ?? (nextRepeat && triggerDone ? nextRepeat : null) ?? normalTasks[0] ?? nextRepeat ?? null;
 
   useEffect(() => {
     const tick = () => {
@@ -265,7 +279,16 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           </div>
           <div className="int-acts">
             <button className="ib ib-do-r" onClick={() => { setFocusRepeat(intR); setDimmedR(true); }}>今やる</button>
-            <button className="ib ib-later" onClick={() => { setNextRepeat(intR); setDimmedR(true); }}>後で</button>
+            <button className="ib ib-later" onClick={() => {
+              // repeat タスクを currentTask の直後に移動
+              const allIds = tasks.map(t => t.id);
+              const without = allIds.filter(id => id !== intR.id);
+              const insertAfter = currentTask ? without.indexOf(currentTask.id) : -1;
+              without.splice(insertAfter + 1, 0, intR.id);
+              reorderTasks(without);
+              setNextRepeat(intR, currentTask?.id ?? null);
+              setDimmedR(true);
+            }}>後で</button>
           </div>
         </div>
       )}
