@@ -110,6 +110,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       setNextRepeatId(null); localStorage.removeItem('nextRepeatId');
       setNextRepeatRtime(null); localStorage.removeItem('nextRepeatRtime');
       setNextRepeatTriggerId(null); localStorage.removeItem('nextRepeatTriggerId');
+      setDimmedR(false); // dimmedR もリセットしないとバナーが !dimmedR で弾かれたまま
     }
   }, [nextRepeat, nextRepeatRtime]);
 
