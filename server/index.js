@@ -148,6 +148,17 @@ for (const sql of [
 
 // user_id が NULL の無効セッションを削除
 await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
+
+// daily_logs から streaks テーブルに不足分を補完（過去分の記録漏れ修正）
+await client.execute(`
+  INSERT INTO streaks (user_id, streak_date, completed)
+  SELECT user_id, log_date, COUNT(*) as completed
+  FROM daily_logs
+  WHERE log_date IS NOT NULL AND user_id IS NOT NULL
+  GROUP BY user_id, log_date
+  ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = MAX(streaks.completed, excluded.completed)
+`);
+
 console.log('マイグレーション完了');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -558,23 +569,52 @@ app.post('/api/logs', requireAuth, async (req, res) => {
 app.get('/api/streaks', requireAuth, async (req, res) => {
   try {
     const days = parseInt(String(req.query.days ?? '14'));
+
+    // daily_logs を正とし、streaks を補完として使用
+    // ドット表示用 rows（days日分）
     const rows = await db.all(
-      `SELECT streak_date, completed FROM streaks
-       WHERE user_id = ? AND streak_date >= date('now', ?)
-       ORDER BY streak_date DESC`,
+      `SELECT log_date AS streak_date, COUNT(*) AS completed
+       FROM daily_logs
+       WHERE user_id = ? AND log_date >= date('now', ?)
+       GROUP BY log_date
+       ORDER BY log_date DESC`,
       req.user.id, `-${days} days`
     );
 
-    // 連続日数計算
+    // streaks テーブルにしか記録がない日も拾う（後方互換）
+    const streakRows = await db.all(
+      `SELECT streak_date, completed FROM streaks
+       WHERE user_id = ? AND streak_date >= date('now', ?) AND completed > 0
+       ORDER BY streak_date DESC`,
+      req.user.id, `-${days} days`
+    );
+    for (const sr of streakRows) {
+      if (!rows.find(r => r.streak_date === sr.streak_date)) {
+        rows.push(sr);
+      }
+    }
+    rows.sort((a, b) => (b.streak_date > a.streak_date ? 1 : -1));
+
+    // 連続日数計算（最大90日分さかのぼる）
+    const allData = await db.all(
+      `SELECT log_date AS streak_date FROM daily_logs
+       WHERE user_id = ? AND log_date >= date('now', '-90 days')
+       GROUP BY log_date
+       UNION
+       SELECT streak_date FROM streaks
+       WHERE user_id = ? AND completed > 0 AND streak_date >= date('now', '-90 days')`,
+      req.user.id, req.user.id
+    );
+    const doneDates = new Set(allData.map(r => r.streak_date));
+
     let streak = 0;
     const today = new Date().toISOString().slice(0, 10);
     for (let i = 0; ; i++) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const ds = d.toISOString().slice(0, 10);
-      const hit = rows.find(r => r.streak_date === ds);
-      if (ds === today && !hit) continue; // 今日未完了でも前日の連続は維持
-      if (!hit || hit.completed === 0) break;
+      if (ds === today && !doneDates.has(ds)) continue; // 今日未完了でも前日の連続は維持
+      if (!doneDates.has(ds)) break;
       streak++;
     }
 
