@@ -354,8 +354,16 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
                 setFocusRepeat(null);
               } else if (nextRepeat && currentTask?.id === nextRepeat.id) {
                 setNextRepeat(null);
-              } else {
-                skipTask();
+              } else if (currentTask) {
+                // 通常タスク: normalTasks の次タスクの後ろに移動してサーバーに保存
+                const nextNormal = normalTasks[1];
+                if (nextNormal) {
+                  const allIds = tasks.map(t => t.id);
+                  const without = allIds.filter(id => id !== currentTask.id);
+                  const insertAfter = without.indexOf(nextNormal.id);
+                  without.splice(insertAfter + 1, 0, currentTask.id);
+                  reorderTasks(without);
+                }
               }
             }}
             style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 10px', cursor: 'pointer' }}
