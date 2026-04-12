@@ -462,9 +462,19 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
 
     // 通常タスクをdone=1にする際、task_dateが未設定なら今日の日付を自動セット
     if (b.done === 1) {
-      const existing = await db.get('SELECT task_date, type FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
+      const existing = await db.get('SELECT task_date, type, done FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
       if (existing && existing.type === 'normal' && !existing.task_date) {
         b.task_date = new Date().toISOString().slice(0, 10);
+      }
+      // POST /api/logs が失敗しても streak が記録されるようバックアップ記録
+      // まだ未完了のタスクの場合のみ（re-edit や undo での二重カウント防止）
+      if (existing && !existing.done) {
+        const td = new Date().toISOString().slice(0, 10);
+        await db.run(
+          `INSERT INTO streaks (user_id, streak_date, completed) VALUES (?, ?, 1)
+           ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = completed + 1`,
+          req.user.id, td
+        );
       }
     }
 
