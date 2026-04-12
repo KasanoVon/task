@@ -60,6 +60,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     if (t.type === 'repeat') {
       if (t.done) return true;
       if (t.task_date && t.task_date > td) return false; // 開始日未到達
+      if (t.end_date && t.end_date < td) return false; // 終了日超過
       if (tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime)) return false;
       return !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime);
     }

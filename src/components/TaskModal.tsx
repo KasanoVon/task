@@ -59,6 +59,8 @@ export function TaskModal({ onClose, task }: Props) {
     const [runitPickerOpen, setRunitPickerOpen] = useState(false);
     const [repeatDate, setRepeatDate] = useState((task?.type === 'repeat' ? task?.task_date : undefined) ?? '');
     const [repeatDatePickerOpen, setRepeatDatePickerOpen] = useState(false);
+    const [repeatEndDate, setRepeatEndDate] = useState((task?.type === 'repeat' ? task?.end_date : undefined) ?? '');
+    const [repeatEndDatePickerOpen, setRepeatEndDatePickerOpen] = useState(false);
 
     function toggleWday(d: number) {
         setWdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -77,7 +79,7 @@ export function TaskModal({ onClose, task }: Props) {
         if (ftype === 'timed') {
             body = { ...base, type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
         } else if (ftype === 'repeat') {
-            body = { ...base, type: 'repeat', runit, rnum, rtime, wdays, ...(repeatDate ? { task_date: repeatDate } : {}) };
+            body = { ...base, type: 'repeat', runit, rnum, rtime, wdays, ...(repeatDate ? { task_date: repeatDate } : {}), ...(repeatEndDate ? { end_date: repeatEndDate } : { end_date: undefined }) };
         } else if (ftype === 'stock') {
             body = { ...base, type: 'stock' };
         } else {
@@ -137,6 +139,13 @@ export function TaskModal({ onClose, task }: Props) {
                 value={repeatDate || today()}
                 onSelect={v => { setRepeatDate(v); setRepeatDatePickerOpen(false); }}
                 onCancel={() => setRepeatDatePickerOpen(false)}
+            />
+        )}
+        {repeatEndDatePickerOpen && (
+            <DatePicker
+                value={repeatEndDate || today()}
+                onSelect={v => { setRepeatEndDate(v); setRepeatEndDatePickerOpen(false); }}
+                onCancel={() => setRepeatEndDatePickerOpen(false)}
             />
         )}
         {startTimePickerOpen && (
@@ -278,6 +287,18 @@ export function TaskModal({ onClose, task }: Props) {
                             </button>
                             {repeatDate && (
                                 <button type="button" onClick={() => setRepeatDate('')}
+                                    style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 8px', cursor: 'pointer' }}>
+                                    なし
+                                </button>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>終了日</span>
+                            <button type="button" onClick={() => setRepeatEndDatePickerOpen(true)} style={pickerBtn}>
+                                {repeatEndDate || '指定なし'}
+                            </button>
+                            {repeatEndDate && (
+                                <button type="button" onClick={() => setRepeatEndDate('')}
                                     style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 8px', cursor: 'pointer' }}>
                                     なし
                                 </button>

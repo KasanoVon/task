@@ -24,6 +24,7 @@ export interface Task {
   rnum?: number;
   rtime?: string;
   wdays?: number[];
+  end_date?: string;
   created_at: string;
 }
 

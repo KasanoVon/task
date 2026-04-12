@@ -31,10 +31,10 @@ app.post('/api/tasks', async (c) => {
     sql: `INSERT INTO tasks
       (name, diff, cat, dur, type, sort_order,
        task_date, start_time, end_time, alert_min,
-       runit, rnum, rtime, wdays)
+       runit, rnum, rtime, wdays, end_date)
       VALUES (?,?,?,?,?,
         (SELECT COALESCE(MAX(sort_order),0)+1 FROM tasks),
-        ?,?,?,?,?,?,?,?)`,
+        ?,?,?,?,?,?,?,?,?)`,
     args: [
       b.name, b.diff ?? 'mid', b.cat ?? 'その他', b.dur ?? '10分',
       b.type ?? 'normal',
@@ -42,6 +42,7 @@ app.post('/api/tasks', async (c) => {
       b.alert_min ?? 15,
       b.runit ?? null, b.rnum ?? 1, b.rtime ?? null,
       JSON.stringify(b.wdays ?? []),
+      b.end_date ?? null,
     ],
   })
   const { rows } = await db.execute({
@@ -72,7 +73,7 @@ app.patch('/api/tasks/:id', async (c) => {
   const allowed = [
     'name','diff','cat','dur','type','done','sort_order',
     'task_date','start_time','end_time','alert_min',
-    'runit','rnum','rtime',
+    'runit','rnum','rtime','end_date',
   ]
   for (const key of allowed) {
     if (key in b) { fields.push(`${key} = ?`); args.push(b[key]) }

@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   rnum        INTEGER DEFAULT 1,
   rtime       TEXT,
   wdays       TEXT    DEFAULT '[]',
+  end_date    TEXT,
   created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -67,6 +68,12 @@ CREATE TABLE IF NOT EXISTS streaks (
   UNIQUE(user_id, streak_date)
 );
 `)
+
+// 既存 DB 向けカラム追加（列が既にある場合のエラーは無視）
+const addCols = ['ALTER TABLE tasks ADD COLUMN end_date TEXT']
+for (const sql of addCols) {
+  try { await db.execute(sql) } catch (_) {}
+}
 
 console.log('マイグレーション完了。')
 process.exit(0)

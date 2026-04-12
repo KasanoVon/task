@@ -123,6 +123,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     if (t.type === 'repeat') {
       if (t.done) return true;
       if (t.task_date && t.task_date > todayStr) return false; // 開始日未到達
+      if (t.end_date && t.end_date < todayStr) return false; // 終了日超過
       if (tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime)) return false;
       return !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime);
     }
@@ -202,6 +203,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       const r = tasks.find(t =>
         !t.done && t.type === 'repeat' &&
         (!t.task_date || t.task_date <= td) &&
+        (!t.end_date || t.end_date >= td) &&
         n >= (t.rtime ?? '') && n <= addMin(t.rtime ?? '', 2) &&
         !tasks.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime) &&
         !tasks.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime)
