@@ -186,7 +186,10 @@ export function TaskModal({ onClose, task }: Props) {
                 onCancel={() => setRunitPickerOpen(false)}
             />
         )}
-        <div className="add-form open" style={{ marginBottom: '14px' }}>
+        <div className="modal-overlay" onClick={onClose} />
+        <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+          <div className="sheet-handle" />
+          <div className="add-form open">
             <div className="fg">
                 <input
                     className="fi"
@@ -327,6 +330,7 @@ export function TaskModal({ onClose, task }: Props) {
                     <button className="fsave" onClick={handleSave}>{isEdit ? '保存する' : '追加する'}</button>
                 </div>
             </div>
+          </div>
         </div>
         </>
     );
