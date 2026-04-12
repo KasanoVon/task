@@ -49,7 +49,7 @@ interface Props {
 }
 
 export function ListScreen({ onShowFocus, username, onLogout }: Props) {
-  const { state, addTask, updateTask, deleteTask, reorderTasks } = useTask();
+  const { state, updateTask, deleteTask, reorderTasks } = useTask();
   const { tasks } = state;
   const td = todayStr();
   // 今日のタスクのみ表示（ストックは除外）
@@ -165,7 +165,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
   }
 
   async function promoteToToday(t: Task) {
-    await addTask({ name: t.name, diff: t.diff, cat: t.cat, dur: t.dur, type: 'normal', task_date: td });
+    await updateTask(t.id, { type: 'normal', task_date: td } as unknown as Partial<Task>);
   }
 
   const sorted = getSorted();
@@ -258,9 +258,9 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
               <button
                 className="ab"
                 onClick={() => promoteToToday(t)}
-                aria-label="今日のリストに追加"
+                aria-label="今日やる"
                 style={{ fontSize: '10px', fontWeight: 700, color: '#D4916E', minWidth: '32px' }}
-              >＋今日</button>
+              >今日</button>
             ) : (
               <button
                 className={`ab ck${t.done ? ' on' : ''}`}
@@ -327,7 +327,6 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
                 <rect x="2" y="4" width="8" height="6" rx="1" /><path d="M4 4V3a2 2 0 014 0v1" />
               </svg>
               <span style={{ color: '#7F77DD', fontWeight: 600 }}>ストック（{stockTasks.length}件）</span>
-              <span style={{ fontSize: '10px', color: '#AAA', fontWeight: 400, marginLeft: '4px' }}>テンプレート</span>
               <svg
                 width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#999" strokeWidth="1.5" strokeLinecap="round"
                 style={{ marginLeft: 'auto', transform: stockOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
