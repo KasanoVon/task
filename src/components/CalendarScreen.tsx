@@ -65,8 +65,12 @@ function dateStr() {
 type CalView = 'month' | 'week';
 
 export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowList, username, onLogout }: Props) {
-  const { state } = useTask();
+  const { state, updateTask } = useTask();
   const { tasks } = state;
+
+  async function toggleDone(t: Task) {
+    await updateTask(t.id, { done: t.done ? 0 : 1 } as unknown as Partial<Task>);
+  }
 
   const [calView] = useState<CalView>('month');
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -281,7 +285,16 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                   <div className="dp-name">{t.name}</div>
                   <div className="dp-meta">{t.dur}{timeStr ? ' · ' + timeStr : ''} · {t.cat}</div>
                 </div>
-                <span className={`dp-status ${statusCls}`}>{statusTxt}</span>
+                {t.done ? (
+                  <button
+                    className={`dp-status ${statusCls}`}
+                    style={{ cursor: 'pointer', border: 'none' }}
+                    onClick={e => { e.stopPropagation(); toggleDone(t); }}
+                    aria-label="未完了に戻す"
+                  >{statusTxt}</button>
+                ) : (
+                  <span className={`dp-status ${statusCls}`}>{statusTxt}</span>
+                )}
                 <button
                   className="ab edt"
                   onClick={e => { e.stopPropagation(); setEditTask(t); }}
