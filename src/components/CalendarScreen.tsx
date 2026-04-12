@@ -65,7 +65,7 @@ function dateStr() {
 type CalView = 'month' | 'week';
 
 export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowList, username, onLogout }: Props) {
-  const { state, updateTask } = useTask();
+  const { state, updateTask, deleteTask } = useTask();
   const { tasks } = state;
 
   async function toggleDone(t: Task) {
@@ -300,6 +300,15 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                   >
                     <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <polyline points="2,6.5 5,10 11,3" />
+                    </svg>
+                  </button>
+                  <button
+                    className="ab del"
+                    onClick={e => { e.stopPropagation(); deleteTask(t.id); }}
+                    aria-label="削除"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#E24B4A" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                      <line x1="3" y1="3" x2="10" y2="10" /><line x1="10" y1="3" x2="3" y2="10" />
                     </svg>
                   </button>
                 </div>
