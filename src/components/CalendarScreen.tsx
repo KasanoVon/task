@@ -276,8 +276,6 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
             const colorCls = t.done ? 'dp-c-n' : t.type === 'timed' ? 'dp-c-t' : t.type === 'repeat' ? 'dp-c-r' : 'dp-c-n';
             const timeStr = t.type === 'timed' ? (t.start_time ?? '') + '〜' + (t.end_time ?? '') :
                             t.type === 'repeat' ? (t.rtime ?? '') : '';
-            const statusCls = t.done ? 'dp-s-done' : t.type === 'timed' && selectedDate < today() ? 'dp-s-dead' : 'dp-s-pend';
-            const statusTxt = t.done ? '完了' : t.type === 'timed' && selectedDate < today() ? '期限切れ' : '未完了';
             return (
               <div key={t.id} className={`dp-item${t.done ? ' dp-done' : ''}`}>
                 <div className={`dp-color ${colorCls}`} />
@@ -285,25 +283,26 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                   <div className="dp-name">{t.name}</div>
                   <div className="dp-meta">{t.dur}{timeStr ? ' · ' + timeStr : ''} · {t.cat}</div>
                 </div>
-                {t.done ? (
+                <div style={{ display: 'flex', gap: '4px' }}>
                   <button
-                    className={`dp-status ${statusCls}`}
-                    style={{ cursor: 'pointer', border: 'none' }}
+                    className="ab edt"
+                    onClick={e => { e.stopPropagation(); setEditTask(t); }}
+                    aria-label="編集"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
+                    </svg>
+                  </button>
+                  <button
+                    className={`ab ck${t.done ? ' on' : ''}`}
                     onClick={e => { e.stopPropagation(); toggleDone(t); }}
-                    aria-label="未完了に戻す"
-                  >{statusTxt}</button>
-                ) : (
-                  <span className={`dp-status ${statusCls}`}>{statusTxt}</span>
-                )}
-                <button
-                  className="ab edt"
-                  onClick={e => { e.stopPropagation(); setEditTask(t); }}
-                  aria-label="編集"
-                >
-                  <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="#7F77DD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M9 2.5l1.5 1.5-6 6H3v-1.5l6-6z" />
-                  </svg>
-                </button>
+                    aria-label={t.done ? '未完了に戻す' : '完了にする'}
+                  >
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke={t.done ? '#639922' : '#B4B2A9'} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <polyline points="2,6.5 5,10 11,3" />
+                    </svg>
+                  </button>
+                </div>
               </div>
             );
           })}
