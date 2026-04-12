@@ -10,6 +10,36 @@ function today() {
 }
 function durToMin(s: string) { return parseInt(s) || 0; }
 
+function formatTime(min: number) {
+  if (min === 0) return '0分';
+  if (min < 60) return `${min}分`;
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m > 0 ? `${h}時間${m}分` : `${h}時間`;
+}
+
+function achievementMsg(count: number, min: number) {
+  if (count === 0) return 'お疲れさまでした！';
+  if (min >= 120) return `${formatTime(min)}、よく頑張りました！`;
+  if (count >= 5) return `${count}個のタスク完了！お疲れさまでした`;
+  return '今日もお疲れさまでした！';
+}
+
+function streakMsg(streak: number) {
+  if (streak === 0) return '今日からスタート！明日も続けよう';
+  if (streak === 1) return '連続1日目！明日も続けよう';
+  if (streak >= 7) return `🏆 ${streak}日連続！すごい！`;
+  if (streak >= 3) return `🔥 ${streak}日連続！`;
+  return `${streak}日連続中！`;
+}
+
+const TYPE_JP: Record<string, string> = {
+  normal: '通常',
+  timed: '期限あり',
+  repeat: '定期',
+  stock: 'ストック',
+};
+
 interface LogRow {
   id: number;
   task_name: string;
@@ -30,6 +60,14 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
   const [logs, setLogs] = useState<LogRow[]>([]);
 
   const totalMin = logs.reduce((s, t) => s + durToMin(t.dur), 0);
+
+  const byType = logs.reduce<Record<string, { count: number; min: number }>>((acc, l) => {
+    const k = l.task_type;
+    if (!acc[k]) acc[k] = { count: 0, min: 0 };
+    acc[k].count++;
+    acc[k].min += durToMin(l.dur);
+    return acc;
+  }, {});
 
   useEffect(() => {
     async function fetchAll() {
@@ -76,34 +114,59 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
       </div>
 
       <div className="done-screen">
-        <div className="done-title">今日もお疲れさま！</div>
-        <div className="done-sub">まとめ</div>
+        <div className="done-title">
+          {logs.length === 0 ? 'お疲れさまでした！' : achievementMsg(logs.length, totalMin)}
+        </div>
+        <div className="done-sub">
+          {logs.length > 0
+            ? `今日は${logs.length}個のタスクを完了しました`
+            : '今日の記録はまだありません'}
+        </div>
 
         <div className="sum-grid">
-          <div className="sum-card">
+          <div className="sum-card sum-card-or">
+            <div className="sum-icon">✅</div>
             <div className="sum-val">{logs.length}</div>
             <div className="sum-lbl">タスク完了</div>
           </div>
-          <div className="sum-card">
-            <div className="sum-val">{totalMin}</div>
-            <div className="sum-lbl">合計（分）</div>
+          <div className="sum-card sum-card-gr">
+            <div className="sum-icon">⏱</div>
+            <div className="sum-val">{formatTime(totalMin)}</div>
+            <div className="sum-lbl">合計時間</div>
           </div>
-          <div className="sum-card">
+          <div className="sum-card sum-card-am">
+            <div className="sum-icon">🔥</div>
             <div className="sum-val">{streak}</div>
             <div className="sum-lbl">連続日</div>
           </div>
         </div>
 
+        {Object.keys(byType).length > 0 && (
+          <div className="type-breakdown">
+            {Object.entries(byType).map(([type, { count, min }]) => (
+              <div key={type} className="tb-pill">
+                <span className="tb-pill-label">{TYPE_JP[type] ?? type}</span>
+                <span className="tb-pill-val">{count}件{min > 0 ? ` · ${formatTime(min)}` : ''}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="streak-section">
           <div className="sr-head">
             <span className="sr-title">連続記録</span>
-            <span className="sr-num">🔥 {streak}日連続</span>
+            <span className="sr-num">{streakMsg(streak)}</span>
           </div>
           <div className="dots">{renderDots()}</div>
         </div>
 
         <div className="log-wrap">
           <div className="log-lbl">今日の記録</div>
+          {logs.length === 0 && (
+            <div style={{ fontSize: '13px', color: 'var(--t3)', textAlign: 'center', padding: '20px 0' }}>
+              まだ完了したタスクはありません
+            </div>
+          )}
           {logs.map((t, i) => {
             const bg = t.task_type === 'timed' ? 'li-timed-bg' : 'li-done-bg';
             const stroke = t.task_type === 'timed' ? '#D85A30' : '#639922';
