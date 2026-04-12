@@ -52,7 +52,7 @@ interface Props {
 }
 
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
-  const { state, completeTask, skipTask, reorderTasks } = useTask();
+  const { state, completeTask, reorderTasks } = useTask();
   const { tasks } = state;
 
   const [clockStr, setClockStr] = useState(now());
