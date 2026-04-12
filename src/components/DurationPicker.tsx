@@ -117,14 +117,14 @@ export function DurationPicker({ value, onConfirm, onCancel }: Props) {
     <div
       style={{
         position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
       }}
       onClick={onCancel}
     >
       <div
         style={{
-          background: '#fff', borderRadius: '16px', padding: '20px 24px 16px',
-          minWidth: '280px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          background: '#fff', borderRadius: '16px 16px 0 0', padding: '20px 24px 28px',
+          width: '100%', maxWidth: '480px', boxShadow: '0 -4px 24px rgba(0,0,0,0.12)',
         }}
         onClick={e => e.stopPropagation()}
       >
