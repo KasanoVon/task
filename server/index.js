@@ -80,6 +80,7 @@ await client.executeMultiple(`
     rnum        INTEGER DEFAULT 1,
     rtime       TEXT,
     wdays       TEXT    DEFAULT '[]',
+    end_date    TEXT,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
@@ -109,6 +110,7 @@ for (const sql of [
   'ALTER TABLE sessions    ADD COLUMN user_id    TEXT',
   'ALTER TABLE tasks       ADD COLUMN user_id    TEXT',
   'ALTER TABLE tasks       ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
+  'ALTER TABLE tasks       ADD COLUMN end_date   TEXT',
   'ALTER TABLE daily_logs  ADD COLUMN user_id    TEXT',
   'ALTER TABLE daily_logs  ADD COLUMN log_date   TEXT',
   'ALTER TABLE daily_logs  ADD COLUMN task_type  TEXT NOT NULL DEFAULT \'normal\'',
@@ -407,8 +409,8 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
     const sortOrder = (maxOrder?.m ?? -1) + 1;
     const result = await db.run(
       `INSERT INTO tasks
-        (user_id, name, diff, cat, dur, type, sort_order, task_date, start_time, end_time, alert_min, runit, rnum, rtime, wdays)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (user_id, name, diff, cat, dur, type, sort_order, task_date, start_time, end_time, alert_min, runit, rnum, rtime, wdays, end_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       req.user.id,
       String(b.name ?? ''),
       String(b.diff ?? 'mid'),
@@ -423,7 +425,8 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
       b.runit ?? null,
       b.rnum ?? 1,
       b.rtime ?? null,
-      JSON.stringify(b.wdays ?? [])
+      JSON.stringify(b.wdays ?? []),
+      b.end_date ?? null
     );
     const newTask = await db.get('SELECT * FROM tasks WHERE id = ?', result.lastInsertRowid);
     return res.json(parseTask(newTask));
@@ -466,7 +469,7 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
     }
 
     const allowed = ['name', 'diff', 'cat', 'dur', 'type', 'done', 'sort_order',
-                     'task_date', 'start_time', 'end_time', 'alert_min', 'runit', 'rnum', 'rtime', 'wdays'];
+                     'task_date', 'start_time', 'end_time', 'alert_min', 'runit', 'rnum', 'rtime', 'wdays', 'end_date'];
     const sets = [];
     const vals = [];
     for (const key of allowed) {

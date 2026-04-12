@@ -137,6 +137,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       await addTask({
         name: task.name, diff: task.diff, cat: task.cat, dur: task.dur,
         type: 'repeat', runit: task.runit, rnum: task.rnum, rtime: task.rtime, wdays: task.wdays,
+        ...(task.task_date ? { task_date: task.task_date } : {}),
+        ...(task.end_date ? { end_date: task.end_date } : {}),
       });
     }
   }
