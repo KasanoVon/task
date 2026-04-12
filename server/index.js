@@ -563,7 +563,7 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
       d.setDate(d.getDate() - i);
       const ds = d.toISOString().slice(0, 10);
       const hit = rows.find(r => r.streak_date === ds);
-      if (ds === today && !hit) break;
+      if (ds === today && !hit) continue; // 今日未完了でも前日の連続は維持
       if (!hit || hit.completed === 0) break;
       streak++;
     }

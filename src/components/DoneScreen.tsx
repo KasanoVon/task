@@ -8,7 +8,14 @@ function today() {
   const d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
-function durToMin(s: string) { return parseInt(s) || 0; }
+function durToMin(s: string): number {
+  if (!s) return 0;
+  const hm = s.match(/(\d+)時間(?:(\d+)分)?/);
+  if (hm) return Number(hm[1]) * 60 + Number(hm[2] ?? 0);
+  const m = s.match(/(\d+)分/);
+  if (m) return Number(m[1]);
+  return parseInt(s) || 0;
+}
 
 function formatTime(min: number) {
   if (min === 0) return '0分';
@@ -91,7 +98,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
   }, []);
 
   function renderDots() {
-    const days = ['月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日'];
+    const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
     const td = today();
     const dots = [];
     for (let i = 13; i >= 0; i--) {
@@ -101,8 +108,13 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
       const hit = streakRows.find(r => r.streak_date === ds);
       const isToday = ds === td;
       const cls = isToday ? 'dot d-today' : hit && hit.completed > 0 ? 'dot d-done' : 'dot d-miss';
-      const lbl = isToday ? '今' : days[d.getDay() === 0 ? 6 : d.getDay() - 1];
-      dots.push(<div key={ds} className={cls}>{lbl}</div>);
+      const wd = WEEKDAYS[d.getDay()];
+      dots.push(
+        <div key={ds} className={cls}>
+          <span className="dot-wd">{isToday ? '' : wd}</span>
+          <span className="dot-d">{isToday ? '今' : d.getDate()}</span>
+        </div>
+      );
     }
     return dots;
   }
