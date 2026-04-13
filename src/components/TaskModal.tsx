@@ -27,6 +27,18 @@ function today() {
 const ALERT_LABELS: Record<number, string> = { 5: '5分前', 15: '15分前', 30: '30分前', 60: '1時間前' };
 const RUNIT_JP: Record<string, string> = { hour: '時間ごと', day: '日ごと', week: '週ごと', month: '月ごと' };
 
+function calcTimedDur(start: string, end: string): string {
+    const [sh, sm] = start.split(':').map(Number);
+    const [eh, em] = end.split(':').map(Number);
+    let mins = (eh * 60 + em) - (sh * 60 + sm);
+    if (mins <= 0) mins += 24 * 60;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}分`;
+    if (m === 0) return `${h}時間`;
+    return `${h}時間${m}分`;
+}
+
 export function TaskModal({ onClose, task }: Props) {
     const { addTask, updateTask } = useTask();
     const isEdit = !!task;
@@ -77,7 +89,7 @@ export function TaskModal({ onClose, task }: Props) {
         const base = { name: name.trim(), diff, cat, dur };
         let body: Partial<Task> = {};
         if (ftype === 'timed') {
-            body = { ...base, type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
+            body = { ...base, dur: calcTimedDur(startTime, endTime), type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
         } else if (ftype === 'repeat') {
             body = { ...base, type: 'repeat', runit, rnum, rtime, wdays, ...(repeatDate ? { task_date: repeatDate } : {}), ...(repeatEndDate ? { end_date: repeatEndDate } : { end_date: undefined }) };
         } else if (ftype === 'stock') {
@@ -206,9 +218,11 @@ export function TaskModal({ onClose, task }: Props) {
                     <button type="button" onClick={() => setCatPickerOpen(true)} style={{ ...pickerBtn, minWidth: '80px' }}>
                         {cat}
                     </button>
+                    {ftype !== 'timed' && (
                     <button type="button" onClick={() => setDurPickerOpen(true)} style={{ ...pickerBtn, minWidth: '70px' }}>
                         {dur}
                     </button>
+                    )}
                 </div>
                 <div className="type-tabs">
                     {(['normal', 'timed', 'repeat', 'stock'] as TaskType[]).map(t => (
