@@ -445,9 +445,18 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         {quickName.trim() && (
           <>
             <div className="qi-attrs">
-              <button className="qi-attr-btn" onClick={() => setQuickDiffOpen(true)}>{{ easy: '簡単', mid: '普通', hard: '難しい' }[quickDiff]}</button>
-              <button className="qi-attr-btn" onClick={() => setQuickCatOpen(true)}>{quickCat}</button>
-              <button className="qi-attr-btn" onClick={() => setQuickDurOpen(true)}>{quickDur}</button>
+              <div className="qi-attr-row">
+                <span className="qi-attr-lbl">難易度</span>
+                <button className="qi-attr-btn" onClick={() => setQuickDiffOpen(true)}>{{ easy: '簡単', mid: '普通', hard: '難しい' }[quickDiff]}</button>
+              </div>
+              <div className="qi-attr-row">
+                <span className="qi-attr-lbl">カテゴリ</span>
+                <button className="qi-attr-btn" onClick={() => setQuickCatOpen(true)}>{quickCat}</button>
+              </div>
+              <div className="qi-attr-row">
+                <span className="qi-attr-lbl">時間</span>
+                <button className="qi-attr-btn" onClick={() => setQuickDurOpen(true)}>{quickDur}</button>
+              </div>
             </div>
             <div className="qi-btns">
               <button className="qi-btn qi-now" onClick={() => handleQuickAdd(true)} disabled={quickAdding}>今すぐやる</button>
