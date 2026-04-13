@@ -52,7 +52,7 @@ interface Props {
 }
 
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
-  const { state, completeTask, reorderTasks } = useTask();
+  const { state, completeTask, reorderTasks, addTask } = useTask();
   const { tasks } = state;
 
   const [clockStr, setClockStr] = useState(now());
@@ -62,6 +62,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [dimmedU, setDimmedU] = useState(false);
   const [dimmedR, setDimmedR] = useState(false);
   const [completing, setCompleting] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickAdding, setQuickAdding] = useState(false);
   const [burst, setBurst] = useState(false);
   const [focusRepeatId, setFocusRepeatId] = useState<number | null>(() => {
     const v = localStorage.getItem('focusRepeatId');
@@ -220,6 +222,22 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, [tasks]);
+
+  async function handleQuickAdd(focusNow: boolean) {
+    if (!quickName.trim() || quickAdding) return;
+    setQuickAdding(true);
+    try {
+      const newTask = await addTask({ name: quickName.trim(), type: 'normal', task_date: todayStr, dur: '10分', diff: 'mid', cat: 'その他' });
+      setQuickName('');
+      if (focusNow) {
+        const allIds = tasks.map(t => t.id);
+        const without = allIds.filter(id => id !== newTask.id);
+        reorderTasks([newTask.id, ...without]);
+      }
+    } finally {
+      setQuickAdding(false);
+    }
+  }
 
   async function handleComplete() {
     if (!currentTask || completing) return;
@@ -400,6 +418,25 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           <button className="done-btn" onClick={onShowDone}>まとめを見る</button>
         </div>
       )}
+
+      {/* 割り込みタスク入力 */}
+      <div className="qi-wrap">
+        <div className="qi-head">＋ 割り込みタスク</div>
+        <input
+          className="qi-input"
+          placeholder="タスク名を入力..."
+          value={quickName}
+          onChange={e => setQuickName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleQuickAdd(false)}
+          disabled={quickAdding}
+        />
+        {quickName.trim() && (
+          <div className="qi-btns">
+            <button className="qi-btn qi-now" onClick={() => handleQuickAdd(true)} disabled={quickAdding}>今すぐやる</button>
+            <button className="qi-btn qi-later" onClick={() => handleQuickAdd(false)} disabled={quickAdding}>リストに追加</button>
+          </div>
+        )}
+      </div>
 
       </div>
     </div>
