@@ -136,10 +136,15 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const pct = totalN > 0 ? Math.round((doneN / totalN) * 100) : 0;
 
   // 未完了の timed タスク（今日・昨日以前）を優先表示
-  const pendingTimed = tasks.find(t =>
-    !t.done && t.type === 'timed' &&
-    (t.task_date ?? '') <= todayStr
-  );
+  const nowHM = clockStr.slice(0, 5); // "HH:MM"
+  const pendingTimed = tasks.find(t => {
+    if (t.done || t.type !== 'timed') return false;
+    const td = t.task_date ?? '';
+    if (td < todayStr) return true;          // 過去日付: 常に表示（未完了の期限切れ）
+    if (td > todayStr) return false;         // 未来日付: 表示しない
+    // 今日のタスク: start_time を過ぎていたら表示
+    return nowHM >= (t.start_time ?? '00:00');
+  });
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
   // トリガータスクが完了済みなら nextRepeat を通常タスクより優先
   const triggerDone = nextRepeatTriggerId != null && !tasks.some(t => t.id === nextRepeatTriggerId && !t.done);
