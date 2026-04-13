@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTask } from '../context/TaskContext';
 import { DurationPicker } from './DurationPicker';
 import { CategoryPicker } from './CategoryPicker';
@@ -39,9 +39,19 @@ function calcTimedDur(start: string, end: string): string {
     return `${h}時間${m}分`;
 }
 
+const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+
 export function TaskModal({ onClose, task }: Props) {
     const { addTask, updateTask } = useTask();
     const isEdit = !!task;
+    const [taskNames, setTaskNames] = useState<string[]>([]);
+
+    useEffect(() => {
+        fetch(`${API_BASE}/api/task-names`, { credentials: 'include' })
+            .then(r => r.ok ? r.json() : [])
+            .then(setTaskNames)
+            .catch(() => {});
+    }, []);
 
     const [name, setName] = useState(task?.name ?? '');
     const [diff, setDiff] = useState<'easy' | 'mid' | 'hard'>(task?.diff ?? 'mid');
@@ -203,8 +213,12 @@ export function TaskModal({ onClose, task }: Props) {
           <div className="sheet-handle" />
           <div className="add-form open">
             <div className="fg">
+                <datalist id="tm-task-names">
+                    {taskNames.map(n => <option key={n} value={n} />)}
+                </datalist>
                 <input
                     className="fi"
+                    list="tm-task-names"
                     placeholder="タスク名を入力..."
                     value={name}
                     onChange={e => setName(e.target.value)}

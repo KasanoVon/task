@@ -527,6 +527,22 @@ app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
 
 // ── 完了ログ API ────────────────────────────────────────
 
+// タスク名候補（tasks + daily_logs の重複排除）
+app.get('/api/task-names', requireAuth, async (req, res) => {
+  try {
+    const rows = await db.all(
+      `SELECT name FROM tasks WHERE user_id = ?
+       UNION
+       SELECT task_name AS name FROM daily_logs WHERE user_id = ? AND task_name IS NOT NULL
+       ORDER BY name`,
+      req.user.id, req.user.id
+    );
+    return res.json(rows.map(r => r.name));
+  } catch (e) {
+    return res.status(500).json({ error: String(e) });
+  }
+});
+
 // ログ取得
 app.get('/api/logs', requireAuth, async (req, res) => {
   try {

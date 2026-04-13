@@ -67,6 +67,15 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [completing, setCompleting] = useState(false);
   const [quickName, setQuickName] = useState('');
   const [quickAdding, setQuickAdding] = useState(false);
+  const [taskNames, setTaskNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    const API_BASE = import.meta.env.VITE_API_BASE ?? '';
+    fetch(`${API_BASE}/api/task-names`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : [])
+      .then(setTaskNames)
+      .catch(() => {});
+  }, []);
   const [quickDiff, setQuickDiff] = useState<'easy' | 'mid' | 'hard'>('mid');
   const [quickCat, setQuickCat] = useState('その他');
   const [quickDur, setQuickDur] = useState('10分');
@@ -434,8 +443,12 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       {/* 割り込みタスク入力 */}
       <div className="qi-wrap">
         <div className="qi-head">＋ 割り込みタスク</div>
+        <datalist id="qi-task-names">
+          {taskNames.map(n => <option key={n} value={n} />)}
+        </datalist>
         <input
           className="qi-input"
+          list="qi-task-names"
           placeholder="タスク名を入力..."
           value={quickName}
           onChange={e => setQuickName(e.target.value)}
