@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTask } from '../context/TaskContext';
+import { DifficultyPicker } from './DifficultyPicker';
+import { CategoryPicker } from './CategoryPicker';
+import { DurationPicker } from './DurationPicker';
 import type { Task } from '../types';
 
 const RUNIT_JP: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
@@ -64,6 +67,12 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [completing, setCompleting] = useState(false);
   const [quickName, setQuickName] = useState('');
   const [quickAdding, setQuickAdding] = useState(false);
+  const [quickDiff, setQuickDiff] = useState<'easy' | 'mid' | 'hard'>('mid');
+  const [quickCat, setQuickCat] = useState('その他');
+  const [quickDur, setQuickDur] = useState('10分');
+  const [quickDiffOpen, setQuickDiffOpen] = useState(false);
+  const [quickCatOpen, setQuickCatOpen] = useState(false);
+  const [quickDurOpen, setQuickDurOpen] = useState(false);
   const [burst, setBurst] = useState(false);
   const [focusRepeatId, setFocusRepeatId] = useState<number | null>(() => {
     const v = localStorage.getItem('focusRepeatId');
@@ -227,7 +236,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     if (!quickName.trim() || quickAdding) return;
     setQuickAdding(true);
     try {
-      const newTask = await addTask({ name: quickName.trim(), type: 'normal', task_date: todayStr, dur: '10分', diff: 'mid', cat: 'その他' });
+      const newTask = await addTask({ name: quickName.trim(), type: 'normal', task_date: todayStr, dur: quickDur, diff: quickDiff, cat: quickCat });
       setQuickName('');
       if (focusNow) {
         const allIds = tasks.map(t => t.id);
@@ -272,6 +281,9 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
 
   return (
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
+      {quickDiffOpen && <DifficultyPicker value={quickDiff} onSelect={v => { setQuickDiff(v); setQuickDiffOpen(false); }} onCancel={() => setQuickDiffOpen(false)} />}
+      {quickCatOpen && <CategoryPicker value={quickCat} onSelect={v => { setQuickCat(v); setQuickCatOpen(false); }} onCancel={() => setQuickCatOpen(false)} />}
+      {quickDurOpen && <DurationPicker value={quickDur} onConfirm={v => { setQuickDur(v); setQuickDurOpen(false); }} onCancel={() => setQuickDurOpen(false)} />}
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title tb-title-accent">{dateStr}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -431,10 +443,17 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           disabled={quickAdding}
         />
         {quickName.trim() && (
-          <div className="qi-btns">
-            <button className="qi-btn qi-now" onClick={() => handleQuickAdd(true)} disabled={quickAdding}>今すぐやる</button>
-            <button className="qi-btn qi-later" onClick={() => handleQuickAdd(false)} disabled={quickAdding}>リストに追加</button>
-          </div>
+          <>
+            <div className="qi-attrs">
+              <button className="qi-attr-btn" onClick={() => setQuickDiffOpen(true)}>{{ easy: '簡単', mid: '普通', hard: '難しい' }[quickDiff]}</button>
+              <button className="qi-attr-btn" onClick={() => setQuickCatOpen(true)}>{quickCat}</button>
+              <button className="qi-attr-btn" onClick={() => setQuickDurOpen(true)}>{quickDur}</button>
+            </div>
+            <div className="qi-btns">
+              <button className="qi-btn qi-now" onClick={() => handleQuickAdd(true)} disabled={quickAdding}>今すぐやる</button>
+              <button className="qi-btn qi-later" onClick={() => handleQuickAdd(false)} disabled={quickAdding}>リストに追加</button>
+            </div>
+          </>
         )}
       </div>
 
