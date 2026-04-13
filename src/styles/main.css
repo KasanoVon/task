@@ -202,6 +202,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .da-btn{width:100%;padding:13px;border-radius:14px;font-size:14px;font-weight:600;cursor:pointer;border:none;}
 .da-p{background:var(--pu);color:#fff;}
 .da-s{background:var(--card);color:var(--t3);border:0.5px solid var(--bd);}
+.da-x{background:#000;color:#fff;}
 
 /* loading / error */
 .err-toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#2C2C2A;color:#fff;font-size:13px;padding:10px 20px;border-radius:999px;display:none;z-index:99;}
