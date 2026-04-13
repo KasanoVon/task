@@ -1,6 +1,6 @@
 {
-  "name": "にちじょうタスク",
-  "short_name": "タスク",
+  "name": "TaskVon",
+  "short_name": "TaskVon",
   "description": "毎日のタスクをシンプルに管理",
   "start_url": "/",
   "display": "standalone",
