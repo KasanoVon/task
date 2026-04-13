@@ -101,7 +101,7 @@ export function AuthPage() {
       <div className="auth-logo">
         <div style={{ fontSize: '3rem', marginBottom: '6px' }}>✓</div>
         <h1 className="auth-title">TaskVon</h1>
-        <p className="auth-sub">毎日のタスクをシンプルに管理</p>
+        <p className="auth-sub">毎日のタスクに希望を</p>
       </div>
 
       <div className="auth-card">

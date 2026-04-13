@@ -1,7 +1,7 @@
 {
   "name": "TaskVon",
   "short_name": "TaskVon",
-  "description": "毎日のタスクをシンプルに管理",
+  "description": "毎日のタスクに希望を",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
