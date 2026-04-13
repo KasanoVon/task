@@ -211,17 +211,6 @@ export function TaskModal({ onClose, task }: Props) {
                     onKeyDown={e => e.key === 'Enter' && handleSave()}
                     autoFocus
                 />
-                <div className="frow">
-                    <button type="button" onClick={() => setDiffPickerOpen(true)} style={{ ...pickerBtn, minWidth: '70px' }}>
-                        {{ easy: '簡単', mid: '普通', hard: '難しい' }[diff]}
-                    </button>
-                    <button type="button" onClick={() => setCatPickerOpen(true)} style={{ ...pickerBtn, minWidth: '80px' }}>
-                        {cat}
-                    </button>
-                    <button type="button" onClick={() => ftype !== 'timed' && setDurPickerOpen(true)} style={{ ...pickerBtn, minWidth: '70px', opacity: ftype === 'timed' ? 0.5 : 1, cursor: ftype === 'timed' ? 'default' : 'pointer' }}>
-                        {ftype === 'timed' ? calcTimedDur(startTime, endTime) : dur}
-                    </button>
-                </div>
                 <div className="type-tabs">
                     {(['normal', 'timed', 'repeat', 'stock'] as TaskType[]).map(t => (
                         <button
@@ -232,6 +221,28 @@ export function TaskModal({ onClose, task }: Props) {
                             {t === 'normal' ? '通常' : t === 'timed' ? '期限あり' : t === 'repeat' ? '定期繰り返し' : 'ストック'}
                         </button>
                     ))}
+                </div>
+
+                {/* 共通: 難易度・カテゴリ・時間 */}
+                <div className="ef open" style={{ gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>難易度</span>
+                        <button type="button" onClick={() => setDiffPickerOpen(true)} style={pickerBtn}>
+                            {{ easy: '簡単', mid: '普通', hard: '難しい' }[diff]}
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>カテゴリ</span>
+                        <button type="button" onClick={() => setCatPickerOpen(true)} style={pickerBtn}>
+                            {cat}
+                        </button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>時間</span>
+                        <button type="button" onClick={() => ftype !== 'timed' && setDurPickerOpen(true)} style={{ ...pickerBtn, opacity: ftype === 'timed' ? 0.5 : 1, cursor: ftype === 'timed' ? 'default' : 'pointer' }}>
+                            {ftype === 'timed' ? calcTimedDur(startTime, endTime) : dur}
+                        </button>
+                    </div>
                 </div>
 
                 {/* 期限あり */}
