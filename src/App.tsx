@@ -28,7 +28,14 @@ type Screen = 'focus' | 'list' | 'cal' | 'done';
 function AppMain() {
   const { authState, logout } = useAuth();
   const { state, loadTasks } = useTask();
-  const [screen, setScreen] = useState<Screen>('focus');
+  const [screen, setScreen] = useState<Screen>(
+    () => (localStorage.getItem('lastScreen') as Screen | null) ?? 'focus'
+  );
+
+  function gotoScreen(s: Screen) {
+    setScreen(s);
+    localStorage.setItem('lastScreen', s);
+  }
 
   useEffect(() => {
     // タスク取得失敗（401・通信エラー等）時はログアウトしてログイン画面へ
@@ -47,40 +54,40 @@ function AppMain() {
           <FocusScreen
             username={authState.currentUser?.username ?? ''}
             onLogout={logout}
-            onShowList={() => setScreen('list')}
-            onShowCal={() => setScreen('cal')}
-            onShowDone={() => setScreen('done')}
+            onShowList={() => gotoScreen('list')}
+            onShowCal={() => gotoScreen('cal')}
+            onShowDone={() => gotoScreen('done')}
           />
         )}
         {screen === 'list' && (
           <ListScreen
-            onShowFocus={() => setScreen('focus')}
+            onShowFocus={() => gotoScreen('focus')}
             username={authState.currentUser?.username ?? ''}
             onLogout={logout}
           />
         )}
         {screen === 'cal' && (
           <CalendarScreen
-            onShowFocus={() => setScreen('focus')}
-            onShowList={() => setScreen('list')}
+            onShowFocus={() => gotoScreen('focus')}
+            onShowList={() => gotoScreen('list')}
             username={authState.currentUser?.username ?? ''}
             onLogout={logout}
           />
         )}
         {screen === 'done' && (
           <DoneScreen
-            onShowFocus={() => setScreen('focus')}
-            onShowList={() => setScreen('list')}
-            onShowCal={() => setScreen('cal')}
+            onShowFocus={() => gotoScreen('focus')}
+            onShowList={() => gotoScreen('list')}
+            onShowCal={() => gotoScreen('cal')}
           />
         )}
       </div>
 
       <TabBar
         active={screen}
-        onFocus={() => setScreen('focus')}
-        onList={() => setScreen('list')}
-        onCal={() => setScreen('cal')}
+        onFocus={() => gotoScreen('focus')}
+        onList={() => gotoScreen('list')}
+        onCal={() => gotoScreen('cal')}
       />
     </div>
   );
