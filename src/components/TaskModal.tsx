@@ -218,11 +218,9 @@ export function TaskModal({ onClose, task }: Props) {
                     <button type="button" onClick={() => setCatPickerOpen(true)} style={{ ...pickerBtn, minWidth: '80px' }}>
                         {cat}
                     </button>
-                    {ftype !== 'timed' && (
-                    <button type="button" onClick={() => setDurPickerOpen(true)} style={{ ...pickerBtn, minWidth: '70px' }}>
-                        {dur}
+                    <button type="button" onClick={() => ftype !== 'timed' && setDurPickerOpen(true)} style={{ ...pickerBtn, minWidth: '70px', opacity: ftype === 'timed' ? 0.5 : 1, cursor: ftype === 'timed' ? 'default' : 'pointer' }}>
+                        {ftype === 'timed' ? calcTimedDur(startTime, endTime) : dur}
                     </button>
-                    )}
                 </div>
                 <div className="type-tabs">
                     {(['normal', 'timed', 'repeat', 'stock'] as TaskType[]).map(t => (
