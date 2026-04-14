@@ -24,7 +24,19 @@ export function usePush() {
     if (!supported) return;
 
     navigator.serviceWorker.ready.then((reg) => {
-      reg.pushManager.getSubscription().then((sub) => setSubscribed(sub !== null));
+      reg.pushManager.getSubscription().then(async (sub) => {
+        if (!sub) { setSubscribed(false); return; }
+        setSubscribed(true);
+        // ブラウザに購読があればサーバーへ再同期（スキーマ移行後の復旧対応）
+        try {
+          await fetch(`${API_BASE}/api/push/subscribe`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: sub }),
+          });
+        } catch { /* 無視 */ }
+      });
     });
 
     let permissionStatus: PermissionStatus | null = null;
