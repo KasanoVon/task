@@ -146,6 +146,9 @@ await client.execute("DELETE FROM sessions   WHERE user_id IS NULL OR user_id = 
 await client.execute("DELETE FROM tasks      WHERE user_id IS NULL OR user_id = ''");
 await client.execute("DELETE FROM daily_logs WHERE user_id IS NULL OR user_id = ''");
 
+// 期限切れセッションを削除（再起動のたびに掃除）
+await client.execute('DELETE FROM sessions WHERE expires_at < unixepoch()');
+
 // dur TEXT → INTEGER (minutes) 変換（テキスト型の全行を対象）
 try {
   // "10分", "1時間", "5min", "10.0" など全ての文字列型を変換
