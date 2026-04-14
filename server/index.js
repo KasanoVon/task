@@ -525,6 +525,7 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
 app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id);
+    await db.run('DELETE FROM daily_logs WHERE task_id = ? AND user_id = ?', id, req.user.id);
     await db.run('DELETE FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
     return res.status(204).send();
   } catch (error) {
