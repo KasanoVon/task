@@ -924,7 +924,7 @@ app.listen(PORT, async () => {
 });
 
 // ── プッシュ通知バックグラウンド監視（1分ごと）─────────────
-const notifiedKeys = new Set(); // "user_id:task_id:date" — 再起動まで重複防止
+const notifiedKeys = new Set(); // "user_id:task_id:date:start_time" — 再起動まで重複防止
 
 setInterval(async () => {
   try {
@@ -952,7 +952,7 @@ setInterval(async () => {
       const diff = startMin - currentMin;
       if (diff <= 0 || diff > row.alert_min) continue;
 
-      const key = `${row.user_id}:${row.task_id}:${todayStr}`;
+      const key = `${row.user_id}:${row.task_id}:${todayStr}:${row.start_time}`;
       if (notifiedKeys.has(key)) continue;
       notifiedKeys.add(key);
 
