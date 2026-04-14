@@ -264,6 +264,7 @@ const DEFAULT_CATS_SEED = [
   { name: '学習',       group: '仕事・学習' },
   { name: '運動',       group: '健康' },
   { name: 'ケア',       group: '健康' },
+  { name: '睡眠',       group: '健康' },
   { name: '支出',       group: 'お金' },
   { name: '投資',       group: 'お金' },
   { name: '手続き',     group: 'お金' },
