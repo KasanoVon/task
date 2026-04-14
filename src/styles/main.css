@@ -184,6 +184,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans JP',sans
 .li-body{flex:1;min-width:0;}
 .li-name{font-size:13px;font-weight:600;color:var(--t);overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .li-meta{font-size:10px;color:var(--t2);margin-top:2px;}
+/* 残りタスクキュー */
+.fq-wrap{margin-top:12px;display:flex;flex-direction:column;gap:1px;}
+.fq-head{font-size:11px;font-weight:600;color:var(--t3);padding:10px 0 4px;letter-spacing:.04em;}
+.fq-head-done{color:var(--gr);}
+.fq-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:0.5px solid var(--bd);}
+.fq-item:last-child{border-bottom:none;}
+.fq-bar{width:3px;height:32px;border-radius:2px;flex-shrink:0;}
+.fq-normal{background:var(--pu);}
+.fq-timed{background:var(--co);}
+.fq-repeat{background:#8B6FD4;}
+.fq-bar-done{background:var(--gr);}
+.fq-name{flex:1;font-size:13px;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fq-done .fq-name{color:var(--t3);text-decoration:line-through;}
+.fq-dur{font-size:11px;color:var(--t3);flex-shrink:0;}
 /* 割り込みタスク入力 */
 .qi-wrap{margin-top:16px;background:var(--card);border:0.5px solid var(--bd);border-radius:14px;padding:14px;}
 .qi-head{font-size:11px;font-weight:600;color:var(--t3);margin-bottom:8px;letter-spacing:.04em;}
