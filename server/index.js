@@ -232,32 +232,46 @@ try {
   console.error('categories seed エラー:', e);
 }
 
-// categories: 全ユーザーに最新のデフォルトカテゴリを追加（不足分のみ）＆ group_name を設定
+// categories: 行動ベース統一（旧カテゴリ名を新名称にリネーム・統廃合）
+const CAT_RENAME_MAP = {
+  '掃除': '家事', '片付け': '家事', '料理': '家事', '洗濯': '家事',
+  '入浴・身支度': '身の回り',
+  '業務・タスク': '仕事', '会議': '仕事',
+  '勉強': '学習', '資格': '学習',
+  '体調管理': 'ケア', '医療・受診': 'ケア', '美容・ケア': 'ケア',
+  '手続き・書類': '手続き',
+  '家族': '交流', '友人・交流': '交流',
+};
+try {
+  // tasks.cat を新名称に一括更新
+  for (const [oldName, newName] of Object.entries(CAT_RENAME_MAP)) {
+    await db.run('UPDATE tasks SET cat = ? WHERE cat = ?', newName, oldName);
+  }
+  // 統廃合された旧カテゴリ行を削除
+  for (const oldName of Object.keys(CAT_RENAME_MAP)) {
+    await db.run('DELETE FROM categories WHERE name = ?', oldName);
+  }
+} catch (e) {
+  console.error('categories リネームエラー:', e);
+}
+
+// categories: 新しいデフォルトカテゴリを全ユーザーに追加・group_name を最新化
 const DEFAULT_CATS_SEED = [
-  { name: '掃除',        group: '生活' },
-  { name: '片付け',      group: '生活' },
-  { name: '料理',        group: '生活' },
-  { name: '洗濯',        group: '生活' },
-  { name: '買い物',      group: '生活' },
-  { name: '入浴・身支度', group: '生活' },
-  { name: '業務・タスク', group: '仕事・学習' },
-  { name: '会議',        group: '仕事・学習' },
-  { name: '勉強',        group: '仕事・学習' },
-  { name: '資格',        group: '仕事・学習' },
-  { name: '運動',        group: '健康・美容' },
-  { name: '体調管理',    group: '健康・美容' },
-  { name: '医療・受診',  group: '健康・美容' },
-  { name: '美容・ケア',  group: '健康・美容' },
-  { name: '支出',        group: 'お金・手続き' },
-  { name: '投資',        group: 'お金・手続き' },
-  { name: '手続き・書類', group: 'お金・手続き' },
-  { name: '読書',        group: '趣味・余暇' },
-  { name: '娯楽',        group: '趣味・余暇' },
-  { name: '趣味',        group: '趣味・余暇' },
-  { name: '家族',        group: '人間関係' },
-  { name: '友人・交流',  group: '人間関係' },
-  { name: '移動・外出',  group: 'その他' },
-  { name: 'その他',      group: 'その他' },
+  { name: '家事',       group: '生活' },
+  { name: '身の回り',   group: '生活' },
+  { name: '買い物',     group: '生活' },
+  { name: '仕事',       group: '仕事・学習' },
+  { name: '学習',       group: '仕事・学習' },
+  { name: '運動',       group: '健康' },
+  { name: 'ケア',       group: '健康' },
+  { name: '支出',       group: 'お金' },
+  { name: '投資',       group: 'お金' },
+  { name: '手続き',     group: 'お金' },
+  { name: '娯楽',       group: '余暇' },
+  { name: '趣味',       group: '余暇' },
+  { name: '読書',       group: '余暇' },
+  { name: '交流',       group: '人間関係' },
+  { name: '移動・外出', group: '移動' },
 ];
 try {
   const users = await db.all('SELECT id FROM users');
@@ -269,9 +283,9 @@ try {
         'INSERT OR IGNORE INTO categories (user_id, name, group_name, sort_order) VALUES (?, ?, ?, ?)',
         user.id, c.name, c.group, order++
       );
-      // 既存行に group_name が未設定なら補完
+      // group_name を常に最新に更新（グループ再編に対応）
       await db.run(
-        'UPDATE categories SET group_name = ? WHERE user_id = ? AND name = ? AND group_name IS NULL',
+        'UPDATE categories SET group_name = ? WHERE user_id = ? AND name = ?',
         c.group, user.id, c.name
       );
     }

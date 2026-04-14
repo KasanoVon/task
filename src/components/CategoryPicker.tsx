@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
-const GROUP_ORDER = ['生活', '仕事・学習', '健康・美容', 'お金・手続き', '趣味・余暇', '人間関係', 'その他'];
+const GROUP_ORDER = ['生活', '仕事・学習', '健康', 'お金', '余暇', '人間関係', '移動'];
 
 interface Cat { id: number; name: string; group_name: string | null; }
 
