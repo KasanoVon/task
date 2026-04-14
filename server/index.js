@@ -124,6 +124,8 @@ try {
   const info = await client.execute('PRAGMA table_info(daily_logs)');
   const col = info.rows.find(r => r.name === 'task_id');
   if (col && Number(col.notnull) === 1) {
+    // 前回の失敗分が残っていれば削除
+    await client.execute('DROP TABLE IF EXISTS daily_logs_new');
     await client.execute(`
       CREATE TABLE daily_logs_new (
         id        INTEGER PRIMARY KEY AUTOINCREMENT,
