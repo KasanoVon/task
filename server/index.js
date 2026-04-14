@@ -137,13 +137,14 @@ await client.execute("DELETE FROM sessions   WHERE user_id IS NULL OR user_id = 
 await client.execute("DELETE FROM tasks      WHERE user_id IS NULL OR user_id = ''");
 await client.execute("DELETE FROM daily_logs WHERE user_id IS NULL OR user_id = ''");
 
-// dur TEXT → INTEGER (minutes) 変換（旧フォーマット行のみ対象）
+// dur TEXT → INTEGER (minutes) 変換（テキスト型の全行を対象）
 try {
-  const taskDurRows = await client.execute("SELECT id, dur FROM tasks WHERE typeof(dur) = 'text' AND (dur LIKE '%分%' OR dur LIKE '%時間%')");
+  // "10分", "1時間", "5min", "10.0" など全ての文字列型を変換
+  const taskDurRows = await client.execute("SELECT id, dur FROM tasks WHERE typeof(dur) = 'text'");
   for (const row of taskDurRows.rows) {
     await client.execute('UPDATE tasks SET dur = ? WHERE id = ?', [parseDurStr(String(row.dur)), row.id]);
   }
-  const logDurRows = await client.execute("SELECT id, dur FROM daily_logs WHERE typeof(dur) = 'text' AND (dur LIKE '%分%' OR dur LIKE '%時間%')");
+  const logDurRows = await client.execute("SELECT id, dur FROM daily_logs WHERE typeof(dur) = 'text'");
   for (const row of logDurRows.rows) {
     await client.execute('UPDATE daily_logs SET dur = ? WHERE id = ?', [parseDurStr(String(row.dur)), row.id]);
   }
@@ -477,7 +478,7 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
       String(b.name ?? ''),
       String(b.diff ?? 'mid'),
       String(b.cat ?? 'その他'),
-      String(b.dur ?? '10分'),
+      parseDurStr(b.dur ?? 10),
       String(b.type ?? 'normal'),
       sortOrder,
       b.task_date ?? null,
@@ -522,10 +523,12 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
     const id = parseInt(req.params.id);
     const b = req.body ?? {};
 
+    // done 変更前の状態を取得（整合性チェック用）
+    const existing = await db.get('SELECT task_date, type, done FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
+
     // 通常タスクをdone=1にする際、task_dateが未設定なら今日の日付を自動セット
-    if (b.done === 1) {
-      const existing = await db.get('SELECT task_date, type FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
-      if (existing && existing.type === 'normal' && !existing.task_date) {
+    if (b.done === 1 && existing) {
+      if (existing.type === 'normal' && !existing.task_date) {
         b.task_date = new Date().toISOString().slice(0, 10);
       }
     }
@@ -537,7 +540,9 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
     for (const key of allowed) {
       if (key in b) {
         sets.push(`${key} = ?`);
-        vals.push(key === 'wdays' ? JSON.stringify(b[key]) : b[key]);
+        if (key === 'wdays') vals.push(JSON.stringify(b[key]));
+        else if (key === 'dur') vals.push(parseDurStr(b[key] ?? 0));
+        else vals.push(b[key]);
       }
     }
     if (sets.length === 0) return res.status(400).json({ error: 'no_fields' });
@@ -546,6 +551,16 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
       `UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND user_id = ?`,
       ...vals
     );
+
+    // done=0（未完了に戻す）時、当日の完了ログを削除して整合性を保つ
+    if (b.done === 0 && existing && existing.done) {
+      const today = new Date().toISOString().slice(0, 10);
+      await db.run(
+        'DELETE FROM daily_logs WHERE task_id = ? AND user_id = ? AND log_date = ? AND done = 1',
+        id, req.user.id, today
+      );
+    }
+
     const updated = await db.get('SELECT * FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
     return res.json(parseTask(updated));
   } catch (error) {
@@ -605,6 +620,18 @@ app.post('/api/logs', requireAuth, async (req, res) => {
   try {
     const b = req.body ?? {};
     const today = new Date().toISOString().slice(0, 10);
+
+    // 同一タスクの30秒以内の重複送信を弾く（二重タップ・ネットワーク再送対策）
+    if (b.task_id) {
+      const recent = await db.get(
+        `SELECT id FROM daily_logs
+         WHERE task_id = ? AND user_id = ? AND log_date = ? AND done = 1
+           AND logged_at >= datetime('now', '-30 seconds')`,
+        b.task_id, req.user.id, today
+      );
+      if (recent) return res.status(204).send();
+    }
+
     await db.run(
       'INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done) VALUES (?, ?, ?, ?, ?, ?, ?)',
       req.user.id, today, b.task_id ?? null, b.task_name, b.task_type ?? 'normal', parseDurStr(b.dur ?? 0), b.done ?? 1
