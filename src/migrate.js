@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   log_date  TEXT    NOT NULL,
-  task_id   INTEGER NOT NULL,
+  task_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
   task_name TEXT    NOT NULL,
   task_type TEXT    NOT NULL DEFAULT 'normal',
   dur       TEXT,
@@ -62,10 +62,45 @@ CREATE TABLE IF NOT EXISTS daily_logs (
 
 `)
 
+await db.execute('PRAGMA foreign_keys = ON')
+
 // 既存 DB 向けカラム追加（列が既にある場合のエラーは無視）
 const addCols = ['ALTER TABLE tasks ADD COLUMN end_date TEXT']
 for (const sql of addCols) {
   try { await db.execute(sql) } catch (_) {}
+}
+
+// daily_logs.task_id を nullable FK に移行
+try {
+  const info = await db.execute('PRAGMA table_info(daily_logs)')
+  const col = info.rows.find(r => r.name === 'task_id')
+  if (col && Number(col.notnull) === 1) {
+    await db.execute(`
+      CREATE TABLE daily_logs_new (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        log_date  TEXT    NOT NULL,
+        task_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+        task_name TEXT    NOT NULL,
+        task_type TEXT    NOT NULL DEFAULT 'normal',
+        dur       TEXT,
+        done      INTEGER NOT NULL DEFAULT 0,
+        logged_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+    `)
+    await db.execute(`
+      INSERT INTO daily_logs_new
+      SELECT id, user_id, log_date,
+        CASE WHEN task_id = 0 THEN NULL ELSE task_id END,
+        task_name, task_type, dur, done, logged_at
+      FROM daily_logs
+    `)
+    await db.execute('DROP TABLE daily_logs')
+    await db.execute('ALTER TABLE daily_logs_new RENAME TO daily_logs')
+    console.log('daily_logs: task_id を nullable FK に変更しました')
+  }
+} catch (e) {
+  console.error('daily_logs FK 移行エラー:', e)
 }
 
 // streaks テーブルが残っていれば daily_logs に統合して削除
@@ -74,7 +109,7 @@ try {
   if (hasTbl.rows.length > 0) {
     await db.execute(`
       INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done, logged_at)
-      SELECT s.user_id, s.streak_date, 0, '(移行)', 'normal', '', 1,
+      SELECT s.user_id, s.streak_date, NULL, '(移行)', 'normal', '', 1,
              s.streak_date || 'T00:00:00.000Z'
       FROM streaks s
       WHERE s.completed > 0

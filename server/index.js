@@ -41,6 +41,9 @@ const db = {
   },
 };
 
+// 外部キー制約を有効化
+await client.execute('PRAGMA foreign_keys = ON');
+
 // テーブル初期化
 await client.executeMultiple(`
   CREATE TABLE IF NOT EXISTS users (
@@ -88,7 +91,7 @@ await client.executeMultiple(`
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     log_date  TEXT    NOT NULL,
-    task_id   INTEGER NOT NULL,
+    task_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
     task_name TEXT    NOT NULL,
     task_type TEXT    NOT NULL DEFAULT 'normal',
     dur       TEXT,
@@ -116,14 +119,46 @@ for (const sql of [
 // user_id が NULL の無効セッションを削除
 await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
 
+// daily_logs.task_id を nullable FK に移行（task_id NOT NULL の場合のみテーブル再作成）
+try {
+  const info = await client.execute('PRAGMA table_info(daily_logs)');
+  const col = info.rows.find(r => r.name === 'task_id');
+  if (col && Number(col.notnull) === 1) {
+    await client.execute(`
+      CREATE TABLE daily_logs_new (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        log_date  TEXT    NOT NULL,
+        task_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
+        task_name TEXT    NOT NULL,
+        task_type TEXT    NOT NULL DEFAULT 'normal',
+        dur       TEXT,
+        done      INTEGER NOT NULL DEFAULT 0,
+        logged_at TEXT    NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+    await client.execute(`
+      INSERT INTO daily_logs_new
+      SELECT id, user_id, log_date,
+        CASE WHEN task_id = 0 THEN NULL ELSE task_id END,
+        task_name, task_type, dur, done, logged_at
+      FROM daily_logs
+    `);
+    await client.execute('DROP TABLE daily_logs');
+    await client.execute('ALTER TABLE daily_logs_new RENAME TO daily_logs');
+    console.log('daily_logs: task_id を nullable FK に変更しました');
+  }
+} catch (e) {
+  console.error('daily_logs FK 移行エラー:', e);
+}
+
 // streaks テーブルが残っていれば daily_logs に統合して削除
 try {
   const hasTbl = await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='streaks'");
   if (hasTbl.rows.length > 0) {
-    // streaks にしかない日付を synthetic ログとして daily_logs に移行
     await client.execute(`
       INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done, logged_at)
-      SELECT s.user_id, s.streak_date, 0, '(移行)', 'normal', '', 1,
+      SELECT s.user_id, s.streak_date, NULL, '(移行)', 'normal', '', 1,
              s.streak_date || 'T00:00:00.000Z'
       FROM streaks s
       WHERE s.completed > 0
