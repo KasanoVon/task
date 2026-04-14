@@ -59,7 +59,7 @@ interface Props {
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
   const { state, completeTask, reorderTasks, addTask } = useTask();
   const { tasks } = state;
-  const { supported: pushSupported, subscribed: pushSubscribed, enable: pushEnable, disable: pushDisable } = usePush();
+  const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, enable: pushEnable, disable: pushDisable } = usePush();
 
   const [clockStr, setClockStr] = useState(now());
   const [nextStr, setNextStr] = useState('次の予定：なし');
@@ -304,7 +304,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
             <button
               title={pushSubscribed ? '通知をオフにする' : '通知をオンにする'}
               onClick={pushSubscribed ? pushDisable : pushEnable}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', opacity: pushSubscribed ? 1 : 0.55 }}
+              disabled={pushLoading}
+              style={{ background: 'none', border: 'none', cursor: pushLoading ? 'wait' : 'pointer', padding: '2px', display: 'flex', alignItems: 'center', opacity: pushSubscribed ? 1 : 0.55 }}
             >
               {pushSubscribed ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

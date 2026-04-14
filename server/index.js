@@ -125,12 +125,9 @@ await client.executeMultiple(`
   CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, log_date);
 
   CREATE TABLE IF NOT EXISTS push_subscriptions (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    endpoint   TEXT    NOT NULL UNIQUE,
-    p256dh     TEXT    NOT NULL,
-    auth       TEXT    NOT NULL,
-    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+    user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    subscription_json TEXT NOT NULL,
+    created_at        TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
   CREATE TABLE IF NOT EXISTS app_settings (
@@ -163,6 +160,22 @@ await client.execute("DELETE FROM daily_logs WHERE user_id IS NULL OR user_id = 
 
 // 期限切れセッションを削除（再起動のたびに掃除）
 await client.execute('DELETE FROM sessions WHERE expires_at < unixepoch()');
+
+// push_subscriptions: 旧スキーマ（endpoint/p256dh/auth 分割）→ 新スキーマ（subscription_json）に移行
+try {
+  const cols = (await client.execute('PRAGMA table_info(push_subscriptions)')).rows.map(r => r.name);
+  if (cols.includes('endpoint')) {
+    await client.execute('DROP TABLE IF EXISTS push_subscriptions');
+    await client.execute(`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        user_id           TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        subscription_json TEXT NOT NULL,
+        created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+      )
+    `);
+    console.log('push_subscriptions を新スキーマに移行しました');
+  }
+} catch (e) { /* 無視 */ }
 
 // dur TEXT → INTEGER (minutes) 変換（テキスト型の全行を対象）
 try {
@@ -822,23 +835,24 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
 
 // ── プッシュ通知 API ────────────────────────────────────
 
-// VAPID 公開鍵を返す（認証不要でも OK だが requireAuth で統一）
-app.get('/api/push/vapid-public-key', requireAuth, (_req, res) => {
+// VAPID 公開鍵（認証なしで取得可能）
+app.get('/api/push/vapid-public-key', (_req, res) => {
+  if (!VAPID_PUBLIC_KEY) return res.status(503).json({ error: 'vapid_not_ready' });
   res.json({ publicKey: VAPID_PUBLIC_KEY });
 });
 
-// プッシュ購読を登録
+// プッシュ購読を登録（subscription オブジェクト丸ごと保存）
 app.post('/api/push/subscribe', requireAuth, async (req, res) => {
   try {
-    const { endpoint, keys } = req.body;
-    if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'invalid' });
+    const subscription = req.body?.subscription;
+    if (!subscription || typeof subscription !== 'object') return res.status(400).json({ error: 'invalid' });
     await db.run(
-      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`,
-      req.user.id, endpoint, keys.p256dh, keys.auth
+      `INSERT INTO push_subscriptions (user_id, subscription_json, created_at)
+       VALUES (?, ?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET subscription_json = excluded.subscription_json, created_at = excluded.created_at`,
+      req.user.id, JSON.stringify(subscription), new Date().toISOString()
     );
-    return res.json({ ok: true });
+    return res.status(204).send();
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'server_error' });
@@ -846,11 +860,10 @@ app.post('/api/push/subscribe', requireAuth, async (req, res) => {
 });
 
 // プッシュ購読を削除
-app.delete('/api/push/unsubscribe', requireAuth, async (req, res) => {
+app.delete('/api/push/subscribe', requireAuth, async (req, res) => {
   try {
-    const { endpoint } = req.body;
-    if (endpoint) await db.run('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', req.user.id, endpoint);
-    return res.json({ ok: true });
+    await db.run('DELETE FROM push_subscriptions WHERE user_id = ?', req.user.id);
+    return res.status(204).send();
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'server_error' });
@@ -885,7 +898,7 @@ setInterval(async () => {
 
     // 今日の未完了 timed タスクと、そのユーザーの push 購読をまとめて取得
     const rows = await db.all(`
-      SELECT ps.user_id, ps.endpoint, ps.p256dh, ps.auth,
+      SELECT ps.user_id, ps.subscription_json,
              t.id AS task_id, t.name, t.start_time, COALESCE(t.alert_min, 30) AS alert_min
       FROM push_subscriptions ps
       JOIN tasks t ON t.user_id = ps.user_id
@@ -898,25 +911,25 @@ setInterval(async () => {
     for (const row of rows) {
       const [sh, sm] = row.start_time.split(':').map(Number);
       const startMin = sh * 60 + sm;
-      const diff = startMin - currentMin; // 開始まで何分か
+      const diff = startMin - currentMin;
       if (diff <= 0 || diff > row.alert_min) continue;
 
       const key = `${row.user_id}:${row.task_id}:${todayStr}`;
       if (notifiedKeys.has(key)) continue;
       notifiedKeys.add(key);
 
+      let pushSub;
+      try { pushSub = JSON.parse(row.subscription_json); } catch { continue; }
+
       const payload = JSON.stringify({
         title: row.name,
         body: `${diff}分後に開始します（${row.start_time}〜）`,
-        tag: `task-${row.task_id}`,
+        icon: '/favicon.svg',
+        url: '/',
       });
-      webpush.sendNotification(
-        { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
-        payload
-      ).catch(async err => {
-        // 410 Gone / 404 = 購読が無効 → 削除
+      webpush.sendNotification(pushSub, payload).catch(async err => {
         if (err.statusCode === 410 || err.statusCode === 404) {
-          await db.run('DELETE FROM push_subscriptions WHERE endpoint = ?', row.endpoint).catch(() => {});
+          await db.run('DELETE FROM push_subscriptions WHERE user_id = ?', row.user_id).catch(() => {});
         }
       });
     }
