@@ -22,6 +22,12 @@ import { createClient } from '@libsql/client';
 import bcrypt from 'bcryptjs';
 import 'dotenv/config';
 
+// タスクの日付・時刻はすべて JST (UTC+9) で保存・比較する
+const JST = 9 * 60 * 60 * 1000;
+function todayJST() {
+  return new Date(Date.now() + JST).toISOString().slice(0, 10);
+}
+
 const PORT = Number(process.env.PORT ?? 8787);
 const SESSION_DAYS = 30;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN ?? 'https://your-app.railway.app';
@@ -457,7 +463,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
     if (existing) return res.status(409).json({ error: 'username_taken' });
 
     const id = crypto.randomUUID().replace(/-/g, '');
-    const createdAt = new Date().toISOString().slice(0, 10);
+    const createdAt = todayJST();
     const passwordHash = await bcrypt.hash(password, 10);
     const recoveryCode = crypto.randomBytes(18).toString('base64url');
     const recoveryCodeHash = await bcrypt.hash(recoveryCode, 10);
@@ -660,7 +666,7 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
     // 通常タスクをdone=1にする際、task_dateが未設定なら今日の日付を自動セット
     if (b.done === 1 && existing) {
       if (existing.type === 'normal' && !existing.task_date) {
-        b.task_date = new Date().toISOString().slice(0, 10);
+        b.task_date = todayJST();
       }
     }
 
@@ -685,7 +691,7 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
 
     // done=0（未完了に戻す）時、当日の完了ログを削除して整合性を保つ
     if (b.done === 0 && existing && existing.done) {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = todayJST();
       await db.run(
         'DELETE FROM daily_logs WHERE task_id = ? AND user_id = ? AND log_date = ? AND done = 1',
         id, req.user.id, today
@@ -749,7 +755,7 @@ app.get('/api/task-names', requireAuth, async (req, res) => {
 // ログ取得
 app.get('/api/logs', requireAuth, async (req, res) => {
   try {
-    const date = String(req.query.date ?? new Date().toISOString().slice(0, 10));
+    const date = String(req.query.date ?? todayJST());
     const rows = await db.all(
       'SELECT * FROM daily_logs WHERE user_id = ? AND log_date = ? ORDER BY logged_at DESC',
       req.user.id, date
@@ -765,7 +771,7 @@ app.get('/api/logs', requireAuth, async (req, res) => {
 app.post('/api/logs', requireAuth, async (req, res) => {
   try {
     const b = req.body ?? {};
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayJST();
 
     // 同一タスクの30秒以内の重複送信を弾く（二重タップ・ネットワーク再送対策）
     if (b.task_id) {
@@ -816,11 +822,10 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
     const doneDates = new Set(allData.map(r => r.streak_date));
 
     let streak = 0;
-    const today = new Date().toISOString().slice(0, 10);
+    const today = todayJST();
     for (let i = 0; ; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
+      const d = new Date(Date.now() + JST - i * 86400000);
+      const ds = d.toISOString().slice(0, 10); // JST 日付
       if (ds === today && !doneDates.has(ds)) continue; // 今日未完了でも前日の連続は維持
       if (!doneDates.has(ds)) break;
       streak++;
@@ -890,11 +895,11 @@ const notifiedKeys = new Set(); // "user_id:task_id:date" — 再起動まで重
 
 setInterval(async () => {
   try {
-    const now = new Date();
-    const todayStr = now.toISOString().slice(0, 10);
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(now.getMinutes()).padStart(2, '0');
-    const currentMin = now.getHours() * 60 + now.getMinutes();
+    // タスクの時刻はユーザーのローカル時刻（JST = UTC+9）で保存されているため JST で比較する
+    const JST_OFFSET = 9 * 60 * 60 * 1000;
+    const nowJST = new Date(Date.now() + JST_OFFSET);
+    const todayStr = nowJST.toISOString().slice(0, 10); // JST 日付
+    const currentMin = nowJST.getUTCHours() * 60 + nowJST.getUTCMinutes(); // JST 分
 
     // 今日の未完了 timed タスクと、そのユーザーの push 購読をまとめて取得
     const rows = await db.all(`
