@@ -139,10 +139,11 @@ try {
     `);
     await client.execute(`
       INSERT INTO daily_logs_new
-      SELECT id, user_id, log_date,
-        CASE WHEN task_id = 0 THEN NULL ELSE task_id END,
-        task_name, task_type, dur, done, logged_at
-      FROM daily_logs
+      SELECT dl.id, dl.user_id, dl.log_date,
+        CASE WHEN t.id IS NULL THEN NULL ELSE dl.task_id END,
+        dl.task_name, dl.task_type, dl.dur, dl.done, dl.logged_at
+      FROM daily_logs dl
+      LEFT JOIN tasks t ON t.id = dl.task_id
     `);
     await client.execute('DROP TABLE daily_logs');
     await client.execute('ALTER TABLE daily_logs_new RENAME TO daily_logs');
