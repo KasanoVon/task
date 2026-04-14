@@ -2,9 +2,16 @@ import { useState, useEffect } from 'react';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
-const GROUP_ORDER = ['生活', '仕事・学習', '健康', 'お金', '余暇', '人間関係', '移動'];
+const DESCS: Record<string, string> = {
+  '生活・家事': '家事・日常のルーティン',
+  '仕事・学習': '業務・勉強・スキルアップ',
+  '健康・ケア': '運動・睡眠・医療・美容',
+  '余暇・趣味': '娯楽・趣味・読書',
+  '移動':       '外出・通勤・移動',
+  '人間関係':   '家族・友人・交流',
+};
 
-interface Cat { id: number; name: string; group_name: string | null; }
+interface Cat { id: number; name: string; }
 
 interface Props {
   value: string;
@@ -23,60 +30,50 @@ export function CategoryPicker({ value, onSelect, onCancel }: Props) {
       .catch(() => setLoading(false));
   }, []);
 
-  // グループ順にまとめる。group_name が null / 未知のものは末尾に
-  const groups: { label: string; items: Cat[] }[] = [];
-  const placed = new Set<number>();
-
-  for (const g of GROUP_ORDER) {
-    const items = cats.filter(c => c.group_name === g);
-    if (items.length > 0) {
-      groups.push({ label: g, items });
-      items.forEach(c => placed.add(c.id));
-    }
-  }
-  const rest = cats.filter(c => !placed.has(c.id));
-  if (rest.length > 0) groups.push({ label: 'その他', items: rest });
-
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
       onClick={onCancel}
     >
       <div
-        style={{ background: '#fff', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '420px', maxHeight: '70vh', display: 'flex', flexDirection: 'column', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        style={{ background: '#fff', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: '420px', paddingBottom: '24px' }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ padding: '16px 16px 8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f0ebe3', flexShrink: 0 }}>
+        <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f0ebe3' }}>
           <span style={{ fontSize: '15px', fontWeight: 600, color: '#1A1A1A' }}>カテゴリを選択</span>
           <button onClick={onCancel} style={{ background: 'none', border: 'none', fontSize: '20px', color: '#999', cursor: 'pointer', lineHeight: 1 }}>×</button>
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
-          {loading && (
-            <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>読み込み中…</div>
-          )}
-          {!loading && groups.map(g => (
-            <div key={g.label}>
-              <div style={{ padding: '10px 16px 4px', fontSize: '11px', fontWeight: 600, color: '#B4AFA9', letterSpacing: '0.05em', background: '#faf8f5' }}>
-                {g.label}
+        {loading && (
+          <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>読み込み中…</div>
+        )}
+        {!loading && cats.map(c => (
+          <button
+            key={c.id}
+            onClick={() => onSelect(c.name)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', padding: '14px 20px',
+              background: c.name === value ? '#F5E6DC' : 'none',
+              border: 'none', borderBottom: '1px solid #f5f0eb',
+              cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: c.name === value ? 600 : 400, color: c.name === value ? '#8C4A2B' : '#1A1A1A' }}>
+                {c.name}
               </div>
-              {g.items.map(c => (
-                <button
-                  key={c.id}
-                  onClick={() => onSelect(c.name)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '12px 20px 12px 28px', background: c.name === value ? '#F5E6DC' : 'none', border: 'none', borderBottom: '1px solid #f5f0eb', fontSize: '14px', color: c.name === value ? '#8C4A2B' : '#1A1A1A', fontWeight: c.name === value ? 600 : 400, cursor: 'pointer', textAlign: 'left' }}
-                >
-                  {c.name}
-                  {c.name === value && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#D4916E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <polyline points="3,8 6.5,12 13,4" />
-                    </svg>
-                  )}
-                </button>
-              ))}
+              {DESCS[c.name] && (
+                <div style={{ fontSize: '12px', color: '#B4AFA9', marginTop: '2px' }}>{DESCS[c.name]}</div>
+              )}
             </div>
-          ))}
-        </div>
+            {c.name === value && (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#D4916E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3,8 6.5,12 13,4" />
+              </svg>
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );

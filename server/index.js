@@ -232,15 +232,24 @@ try {
   console.error('categories seed エラー:', e);
 }
 
-// tasks.cat を行動ベース名称に統一（旧名称が残っている場合の移行）
+// tasks.cat を大分類名に統一（旧名称が残っている場合の移行）
 const CAT_RENAME_MAP = {
-  '掃除': '家事', '片付け': '家事', '料理': '家事', '洗濯': '家事',
-  '入浴・身支度': '身の回り',
-  '業務・タスク': '仕事', '会議': '仕事',
-  '勉強': '学習', '資格': '学習',
-  '体調管理': 'ケア', '医療・受診': 'ケア', '美容・ケア': 'ケア',
-  '手続き・書類': '手続き',
-  '家族': '交流', '友人・交流': '交流',
+  // 旧サブカテゴリ → 生活・家事
+  '掃除': '生活・家事', '片付け': '生活・家事', '料理': '生活・家事', '洗濯': '生活・家事',
+  '入浴・身支度': '生活・家事', '身の回り': '生活・家事', '買い物': '生活・家事',
+  '家事': '生活・家事', '支出': '生活・家事', '手続き': '生活・家事', '手続き・書類': '生活・家事',
+  // 旧サブカテゴリ → 仕事・学習
+  '業務・タスク': '仕事・学習', '会議': '仕事・学習', '仕事': '仕事・学習',
+  '勉強': '仕事・学習', '資格': '仕事・学習', '学習': '仕事・学習', '投資': '仕事・学習',
+  // 旧サブカテゴリ → 健康・ケア
+  '体調管理': '健康・ケア', '医療・受診': '健康・ケア', '美容・ケア': '健康・ケア',
+  'ケア': '健康・ケア', '運動': '健康・ケア', '睡眠': '健康・ケア',
+  // 旧サブカテゴリ → 余暇・趣味
+  '娯楽': '余暇・趣味', '趣味': '余暇・趣味', '読書': '余暇・趣味',
+  // 旧サブカテゴリ → 移動
+  '移動・外出': '移動',
+  // 旧サブカテゴリ → 人間関係
+  '家族': '人間関係', '友人・交流': '人間関係', '交流': '人間関係',
 };
 try {
   for (const [oldName, newName] of Object.entries(CAT_RENAME_MAP)) {
@@ -250,37 +259,31 @@ try {
   console.error('tasks.cat リネームエラー:', e);
 }
 
-// master_categories をシード（システム共通・user_id なし）
+// master_categories をシード（大分類6項目・システム共通）
 const MASTER_CATS = [
-  { name: '家事',       group: '生活' },
-  { name: '身の回り',   group: '生活' },
-  { name: '買い物',     group: '生活' },
-  { name: '仕事',       group: '仕事・学習' },
-  { name: '学習',       group: '仕事・学習' },
-  { name: '運動',       group: '健康' },
-  { name: 'ケア',       group: '健康' },
-  { name: '睡眠',       group: '健康' },
-  { name: '支出',       group: 'お金' },
-  { name: '投資',       group: 'お金' },
-  { name: '手続き',     group: 'お金' },
-  { name: '娯楽',       group: '余暇' },
-  { name: '趣味',       group: '余暇' },
-  { name: '読書',       group: '余暇' },
-  { name: '交流',       group: '人間関係' },
-  { name: '移動・外出', group: '移動' },
+  { name: '生活・家事', desc: '家事・日常のルーティン' },
+  { name: '仕事・学習', desc: '業務・勉強・スキルアップ' },
+  { name: '健康・ケア', desc: '運動・睡眠・医療・美容' },
+  { name: '余暇・趣味', desc: '娯楽・趣味・読書' },
+  { name: '移動',       desc: '外出・通勤・移動' },
+  { name: '人間関係',   desc: '家族・友人・交流' },
 ];
 try {
   for (let i = 0; i < MASTER_CATS.length; i++) {
     const c = MASTER_CATS[i];
     await db.run(
       'INSERT OR IGNORE INTO master_categories (name, group_name, sort_order) VALUES (?, ?, ?)',
-      c.name, c.group, i
+      c.name, null, i
     );
     await db.run(
-      'UPDATE master_categories SET group_name = ?, sort_order = ? WHERE name = ?',
-      c.group, i, c.name
+      'UPDATE master_categories SET group_name = NULL, sort_order = ? WHERE name = ?',
+      i, c.name
     );
   }
+  // 旧サブカテゴリ行を削除
+  const keepNames = MASTER_CATS.map(c => c.name);
+  const placeholders = keepNames.map(() => '?').join(',');
+  await db.run(`DELETE FROM master_categories WHERE name NOT IN (${placeholders})`, ...keepNames);
   // per-user categories テーブルを削除（不要になったため）
   await client.execute('DROP TABLE IF EXISTS categories');
 } catch (e) {
