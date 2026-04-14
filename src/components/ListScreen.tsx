@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { durStr } from '../utils/dur';
 import { useTask } from '../context/TaskContext';
 import { TaskModal } from './TaskModal';
 import type { Task } from '../types';
@@ -142,7 +143,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
       const m: Record<string, number> = { easy: 0, mid: 1, hard: 2 };
       return (m[a.diff] ?? 1) - (m[c.diff] ?? 1);
     });
-    if (sortMode === 'time') return b.sort((a, c) => (parseInt(a.dur) || 0) - (parseInt(c.dur) || 0));
+    if (sortMode === 'time') return b.sort((a, c) => (a.dur || 0) - (c.dur || 0));
     if (sortMode === 'cat') return b.sort((a, c) => a.cat.localeCompare(c.cat, 'ja'));
     return b;
   }
@@ -237,7 +238,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
           <div className="ti-body">
             <div className={`ti-name${t.done ? ' done' : ''}`}>{t.name}</div>
             <div className="ti-meta">
-              <span className="tp p-tm">{t.dur}</span>
+              <span className="tp p-tm">{durStr(t.dur)}</span>
               <span className="tp p-ct">{t.cat}</span>
               {t.type === 'timed' && (
                 <span className={`tp ${!t.done && (t.task_date ?? '') < td && !isCrossMidnightActive(t) ? 'p-dl2-exp' : 'p-dl2'}`}>

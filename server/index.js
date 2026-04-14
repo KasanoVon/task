@@ -1,4 +1,16 @@
 import crypto from 'node:crypto';
+
+/** 旧フォーマット文字列 or 数値 → 分（整数） */
+function parseDurStr(s) {
+  if (typeof s === 'number') return s;
+  if (!s) return 0;
+  const hm = s.match(/(\d+)時間(?:(\d+)分)?/);
+  if (hm) return Number(hm[1]) * 60 + Number(hm[2] ?? 0);
+  const m = s.match(/(\d+)分/);
+  if (m) return Number(m[1]);
+  const n = parseInt(s);
+  return isNaN(n) ? 0 : n;
+}
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -69,17 +81,17 @@ await client.executeMultiple(`
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id     TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name        TEXT    NOT NULL,
-    diff        TEXT    NOT NULL DEFAULT 'mid',
+    diff        TEXT    NOT NULL DEFAULT 'mid'     CHECK (diff IN ('easy', 'mid', 'hard')),
     cat         TEXT    NOT NULL DEFAULT 'その他',
-    dur         TEXT    NOT NULL DEFAULT '10分',
-    type        TEXT    NOT NULL DEFAULT 'normal',
+    dur         INTEGER NOT NULL DEFAULT 10,
+    type        TEXT    NOT NULL DEFAULT 'normal'  CHECK (type IN ('normal', 'timed', 'repeat', 'stock')),
     sort_order  INTEGER NOT NULL DEFAULT 0,
-    done        INTEGER NOT NULL DEFAULT 0,
+    done        INTEGER NOT NULL DEFAULT 0         CHECK (done IN (0, 1)),
     task_date   TEXT,
     start_time  TEXT,
     end_time    TEXT,
     alert_min   INTEGER DEFAULT 15,
-    runit       TEXT,
+    runit       TEXT                               CHECK (runit IS NULL OR runit IN ('hour', 'day', 'week', 'month')),
     rnum        INTEGER DEFAULT 1,
     rtime       TEXT,
     wdays       TEXT    DEFAULT '[]',
@@ -87,17 +99,21 @@ await client.executeMultiple(`
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+
   CREATE TABLE IF NOT EXISTS daily_logs (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     log_date  TEXT    NOT NULL,
     task_id   INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
     task_name TEXT    NOT NULL,
-    task_type TEXT    NOT NULL DEFAULT 'normal',
-    dur       TEXT,
-    done      INTEGER NOT NULL DEFAULT 0,
+    task_type TEXT    NOT NULL DEFAULT 'normal'   CHECK (task_type IN ('normal', 'timed', 'repeat', 'stock')),
+    dur       INTEGER NOT NULL DEFAULT 0,
+    done      INTEGER NOT NULL DEFAULT 0          CHECK (done IN (0, 1)),
     logged_at TEXT    NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, log_date);
 
 `);
 
@@ -116,8 +132,24 @@ for (const sql of [
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
 
-// user_id が NULL の無効セッションを削除
-await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
+// NULL user_id の無効レコードを削除
+await client.execute("DELETE FROM sessions   WHERE user_id IS NULL OR user_id = ''");
+await client.execute("DELETE FROM tasks      WHERE user_id IS NULL OR user_id = ''");
+await client.execute("DELETE FROM daily_logs WHERE user_id IS NULL OR user_id = ''");
+
+// dur TEXT → INTEGER (minutes) 変換（旧フォーマット行のみ対象）
+try {
+  const taskDurRows = await client.execute("SELECT id, dur FROM tasks WHERE typeof(dur) = 'text' AND (dur LIKE '%分%' OR dur LIKE '%時間%')");
+  for (const row of taskDurRows.rows) {
+    await client.execute('UPDATE tasks SET dur = ? WHERE id = ?', [parseDurStr(String(row.dur)), row.id]);
+  }
+  const logDurRows = await client.execute("SELECT id, dur FROM daily_logs WHERE typeof(dur) = 'text' AND (dur LIKE '%分%' OR dur LIKE '%時間%')");
+  for (const row of logDurRows.rows) {
+    await client.execute('UPDATE daily_logs SET dur = ? WHERE id = ?', [parseDurStr(String(row.dur)), row.id]);
+  }
+} catch (e) {
+  console.error('dur 変換エラー:', e);
+}
 
 // daily_logs.task_id を nullable FK に移行（task_id NOT NULL の場合のみテーブル再作成）
 try {
@@ -410,6 +442,7 @@ function parseTask(row) {
   return {
     ...row,
     done: Boolean(row.done),
+    dur: parseDurStr(row.dur),
     wdays: (() => {
       try { return JSON.parse(row.wdays || '[]'); } catch { return []; }
     })(),
@@ -560,7 +593,7 @@ app.get('/api/logs', requireAuth, async (req, res) => {
       'SELECT * FROM daily_logs WHERE user_id = ? AND log_date = ? ORDER BY logged_at DESC',
       req.user.id, date
     );
-    return res.json(rows);
+    return res.json(rows.map(r => ({ ...r, dur: parseDurStr(r.dur) })));
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'server_error' });
@@ -574,7 +607,7 @@ app.post('/api/logs', requireAuth, async (req, res) => {
     const today = new Date().toISOString().slice(0, 10);
     await db.run(
       'INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      req.user.id, today, b.task_id, b.task_name, b.task_type ?? 'normal', b.dur ?? '', b.done ?? 1
+      req.user.id, today, b.task_id ?? null, b.task_name, b.task_type ?? 'normal', parseDurStr(b.dur ?? 0), b.done ?? 1
     );
     return res.status(204).send();
   } catch (error) {

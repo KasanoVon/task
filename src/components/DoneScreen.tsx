@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { StreakRow } from '../types';
+import { durStr } from '../utils/dur';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -7,14 +8,6 @@ function pad(n: number) { return String(n).padStart(2, '0'); }
 function today() {
   const d = new Date();
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-}
-function durToMin(s: string): number {
-  if (!s) return 0;
-  const hm = s.match(/(\d+)時間(?:(\d+)分)?/);
-  if (hm) return Number(hm[1]) * 60 + Number(hm[2] ?? 0);
-  const m = s.match(/(\d+)分/);
-  if (m) return Number(m[1]);
-  return parseInt(s) || 0;
 }
 
 function formatTime(min: number) {
@@ -51,7 +44,7 @@ interface LogRow {
   id: number;
   task_name: string;
   task_type: string;
-  dur: string;
+  dur: number;
   done: number;
 }
 
@@ -66,13 +59,13 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
   const [streakRows, setStreakRows] = useState<StreakRow[]>([]);
   const [logs, setLogs] = useState<LogRow[]>([]);
 
-  const totalMin = logs.reduce((s, t) => s + durToMin(t.dur), 0);
+  const totalMin = logs.reduce((s, t) => s + (t.dur || 0), 0);
 
   const byType = logs.reduce<Record<string, { count: number; min: number }>>((acc, l) => {
     const k = l.task_type;
     if (!acc[k]) acc[k] = { count: 0, min: 0 };
     acc[k].count++;
-    acc[k].min += durToMin(l.dur);
+    acc[k].min += (l.dur || 0);
     return acc;
   }, {});
 
@@ -196,7 +189,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
                 </div>
                 <div className="li-body">
                   <div className="li-name">{t.task_name}</div>
-                  <div className="li-meta">{t.dur} {typetag}</div>
+                  <div className="li-meta">{durStr(t.dur)} {typetag}</div>
                 </div>
                 <div style={{ fontSize: '12px', color: 'var(--gr-d)' }}>完了</div>
               </div>

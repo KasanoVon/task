@@ -4,16 +4,9 @@ const ITEM_H = 44;
 const HOURS = Array.from({ length: 25 }, (_, i) => i); // 0〜24時間
 const MINS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
 
-function parseDur(s: string): [number, number] {
-  const hMatch = s.match(/(\d+)時間/);
-  const mMatch = s.match(/(\d+)分/);
-  const h = hMatch ? parseInt(hMatch[1]) : 0;
-  const m = mMatch ? parseInt(mMatch[1]) : 0;
-  if (!hMatch && !mMatch) {
-    const n = parseInt(s);
-    return [0, isNaN(n) ? 10 : n];
-  }
-  return [h, m];
+function parseDur(min: number): [number, number] {
+  const m = min ?? 0;
+  return [Math.floor(m / 60), m % 60];
 }
 
 export function fmtDur(h: number, m: number): string {
@@ -100,8 +93,8 @@ function ScrollCol({ items, selectedIdx, onSelect, label, fmt }: ColProps) {
 }
 
 interface Props {
-  value: string;
-  onConfirm: (v: string) => void;
+  value: number;
+  onConfirm: (v: number) => void;
   onCancel: () => void;
 }
 
@@ -144,7 +137,7 @@ export function DurationPicker({ value, onConfirm, onCancel }: Props) {
             style={{ background: 'none', border: 'none', color: '#999', fontSize: '14px', cursor: 'pointer', padding: '4px 8px' }}
           >キャンセル</button>
           <button
-            onClick={() => onConfirm(fmtDur(HOURS[selH], MINS[selM]))}
+            onClick={() => onConfirm(HOURS[selH] * 60 + MINS[selM])}
             style={{ background: 'none', border: 'none', color: '#D4916E', fontSize: '14px', fontWeight: 700, cursor: 'pointer', padding: '4px 8px' }}
           >OK</button>
         </div>

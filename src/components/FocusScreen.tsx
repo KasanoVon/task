@@ -4,6 +4,7 @@ import { DifficultyPicker } from './DifficultyPicker';
 import { CategoryPicker } from './CategoryPicker';
 import { DurationPicker } from './DurationPicker';
 import type { Task } from '../types';
+import { durStr } from '../utils/dur';
 
 const RUNIT_JP: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
@@ -78,7 +79,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   }, []);
   const [quickDiff, setQuickDiff] = useState<'easy' | 'mid' | 'hard'>('mid');
   const [quickCat, setQuickCat] = useState('その他');
-  const [quickDur, setQuickDur] = useState('10分');
+  const [quickDur, setQuickDur] = useState<number>(10);
   const [quickDiffOpen, setQuickDiffOpen] = useState(false);
   const [quickCatOpen, setQuickCatOpen] = useState(false);
   const [quickDurOpen, setQuickDurOpen] = useState(false);
@@ -417,7 +418,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
           <div className="f-hint">今やること</div>
           <div className="f-name">{currentTask.name}</div>
           <div className="f-pills">
-            <span className="pill p-time">{currentTask.dur}</span>
+            <span className="pill p-time">{durStr(currentTask.dur)}</span>
             <span className="pill p-cat">{currentTask.cat}</span>
             {currentTask.type === 'timed' && <span className="pill p-dl">期限 {currentTask.end_time}</span>}
             {currentTask.type === 'repeat' && <span className="pill p-rep">{rLabel(currentTask)}</span>}
@@ -468,7 +469,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
               </div>
               <div className="qi-attr-row">
                 <span className="qi-attr-lbl">時間</span>
-                <button className="qi-attr-btn" onClick={() => setQuickDurOpen(true)}>{quickDur}</button>
+                <button className="qi-attr-btn" onClick={() => setQuickDurOpen(true)}>{durStr(quickDur)}</button>
               </div>
             </div>
             <div className="qi-btns">

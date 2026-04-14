@@ -8,6 +8,7 @@ import { TimePicker } from './TimePicker';
 import { RunitPicker } from './RunitPicker';
 import { AlertMinPicker } from './AlertMinPicker';
 import type { Task } from '../types';
+import { durStr } from '../utils/dur';
 
 const WDAYS_JP = ['月', '火', '水', '木', '金', '土', '日'];
 
@@ -27,16 +28,12 @@ function today() {
 const ALERT_LABELS: Record<number, string> = { 5: '5分前', 15: '15分前', 30: '30分前', 60: '1時間前' };
 const RUNIT_JP: Record<string, string> = { hour: '時間ごと', day: '日ごと', week: '週ごと', month: '月ごと' };
 
-function calcTimedDur(start: string, end: string): string {
+function calcTimedDur(start: string, end: string): number {
     const [sh, sm] = start.split(':').map(Number);
     const [eh, em] = end.split(':').map(Number);
     let mins = (eh * 60 + em) - (sh * 60 + sm);
     if (mins <= 0) mins += 24 * 60;
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    if (h === 0) return `${m}分`;
-    if (m === 0) return `${h}時間`;
-    return `${h}時間${m}分`;
+    return mins;
 }
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -56,7 +53,7 @@ export function TaskModal({ onClose, task }: Props) {
     const [name, setName] = useState(task?.name ?? '');
     const [diff, setDiff] = useState<'easy' | 'mid' | 'hard'>(task?.diff ?? 'mid');
     const [cat, setCat] = useState(task?.cat ?? 'その他');
-    const [dur, setDur] = useState(task?.dur ?? '10分');
+    const [dur, setDur] = useState<number>(task?.dur ?? 10);
     const [durPickerOpen, setDurPickerOpen] = useState(false);
     const [catPickerOpen, setCatPickerOpen] = useState(false);
     const [diffPickerOpen, setDiffPickerOpen] = useState(false);
@@ -254,7 +251,7 @@ export function TaskModal({ onClose, task }: Props) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>時間</span>
                         <button type="button" onClick={() => ftype !== 'timed' && setDurPickerOpen(true)} style={{ ...pickerBtn, opacity: ftype === 'timed' ? 0.5 : 1, cursor: ftype === 'timed' ? 'default' : 'pointer' }}>
-                            {ftype === 'timed' ? calcTimedDur(startTime, endTime) : dur}
+                            {ftype === 'timed' ? durStr(calcTimedDur(startTime, endTime)) : durStr(dur)}
                         </button>
                     </div>
                 </div>

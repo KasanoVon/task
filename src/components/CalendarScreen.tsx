@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
 import { TaskModal } from './TaskModal';
+import { durStr } from '../utils/dur';
 import type { Task } from '../types';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -281,7 +282,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
                 <div className={`dp-color ${colorCls}`} />
                 <div className="dp-info">
                   <div className="dp-name">{t.name}</div>
-                  <div className="dp-meta">{t.dur}{timeStr ? ' · ' + timeStr : ''} · {t.cat}</div>
+                  <div className="dp-meta">{durStr(t.dur)}{timeStr ? ' · ' + timeStr : ''} · {t.cat}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
                   <button

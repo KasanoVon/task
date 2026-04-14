@@ -12,7 +12,7 @@ export interface Task {
   name: string;
   diff: 'easy' | 'mid' | 'hard';
   cat: string;
-  dur: string;
+  dur: number;
   type: 'normal' | 'timed' | 'repeat' | 'stock';
   sort_order: number;
   done: boolean;
@@ -35,7 +35,7 @@ export interface DailyLog {
   task_id: number;
   task_name: string;
   task_type: string;
-  dur: string;
+  dur: number;
   done: number;
 }
 
