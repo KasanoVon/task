@@ -105,6 +105,7 @@ await client.executeMultiple(`
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name       TEXT    NOT NULL,
+    group_name TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     UNIQUE(user_id, name)
   );
@@ -138,6 +139,7 @@ for (const sql of [
   'ALTER TABLE daily_logs  ADD COLUMN log_date   TEXT',
   'ALTER TABLE daily_logs  ADD COLUMN task_type  TEXT NOT NULL DEFAULT \'normal\'',
   'ALTER TABLE daily_logs  ADD COLUMN dur        TEXT NOT NULL DEFAULT \'\'',
+  'ALTER TABLE categories  ADD COLUMN group_name TEXT',
 ]) {
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
@@ -230,23 +232,48 @@ try {
   console.error('categories seed エラー:', e);
 }
 
-// categories: 全ユーザーに最新のデフォルトカテゴリを追加（不足分のみ）
+// categories: 全ユーザーに最新のデフォルトカテゴリを追加（不足分のみ）＆ group_name を設定
+const DEFAULT_CATS_SEED = [
+  { name: '掃除',        group: '生活' },
+  { name: '片付け',      group: '生活' },
+  { name: '料理',        group: '生活' },
+  { name: '洗濯',        group: '生活' },
+  { name: '買い物',      group: '生活' },
+  { name: '入浴・身支度', group: '生活' },
+  { name: '業務・タスク', group: '仕事・学習' },
+  { name: '会議',        group: '仕事・学習' },
+  { name: '勉強',        group: '仕事・学習' },
+  { name: '資格',        group: '仕事・学習' },
+  { name: '運動',        group: '健康・美容' },
+  { name: '体調管理',    group: '健康・美容' },
+  { name: '医療・受診',  group: '健康・美容' },
+  { name: '美容・ケア',  group: '健康・美容' },
+  { name: '支出',        group: 'お金・手続き' },
+  { name: '投資',        group: 'お金・手続き' },
+  { name: '手続き・書類', group: 'お金・手続き' },
+  { name: '読書',        group: '趣味・余暇' },
+  { name: '娯楽',        group: '趣味・余暇' },
+  { name: '趣味',        group: '趣味・余暇' },
+  { name: '家族',        group: '人間関係' },
+  { name: '友人・交流',  group: '人間関係' },
+  { name: '移動・外出',  group: 'その他' },
+  { name: 'その他',      group: 'その他' },
+];
 try {
-  const DEFAULT_CATS_SEED = [
-    '掃除', '片付け', '料理', '洗濯', '買い物', '入浴・身支度',
-    '業務・タスク', '会議', '勉強', '資格',
-    '運動', '体調管理', '医療・受診',
-    '支出', '投資', '手続き・書類',
-    '読書', '娯楽', '趣味',
-    '家族', '友人・交流',
-    '移動・外出', 'その他',
-  ];
   const users = await db.all('SELECT id FROM users');
   for (const user of users) {
     const maxRow = await db.get('SELECT MAX(sort_order) as m FROM categories WHERE user_id = ?', user.id);
     let order = (maxRow?.m ?? -1) + 1;
-    for (const name of DEFAULT_CATS_SEED) {
-      await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', user.id, name, order++);
+    for (const c of DEFAULT_CATS_SEED) {
+      await db.run(
+        'INSERT OR IGNORE INTO categories (user_id, name, group_name, sort_order) VALUES (?, ?, ?, ?)',
+        user.id, c.name, c.group, order++
+      );
+      // 既存行に group_name が未設定なら補完
+      await db.run(
+        'UPDATE categories SET group_name = ? WHERE user_id = ? AND name = ? AND group_name IS NULL',
+        c.group, user.id, c.name
+      );
     }
   }
 } catch (e) {
@@ -627,39 +654,25 @@ app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
 
 // ── カテゴリ API ────────────────────────────────────────
 
-const DEFAULT_CATS = [
-  // 生活
-  '掃除', '片付け', '料理', '洗濯', '買い物', '入浴・身支度',
-  // 仕事・学習
-  '業務・タスク', '会議', '勉強', '資格',
-  // 健康
-  '運動', '体調管理', '医療・受診',
-  // お金・手続き
-  '支出', '投資', '手続き・書類',
-  // 趣味・余暇
-  '読書', '娯楽', '趣味',
-  // 人間関係
-  '家族', '友人・交流',
-  // その他
-  '移動・外出', 'その他',
-];
-
 // カテゴリ一覧
 app.get('/api/categories', requireAuth, async (req, res) => {
   try {
     let cats = await db.all(
-      'SELECT id, name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
+      'SELECT id, name, group_name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
       req.user.id
     );
     // 初回アクセス時: デフォルト + tasks の既存 cat をシード
     if (cats.length === 0) {
       const taskCats = await db.all('SELECT DISTINCT cat FROM tasks WHERE user_id = ? AND cat IS NOT NULL AND cat != \'\'', req.user.id);
-      const allCats = [...new Set([...DEFAULT_CATS, ...taskCats.map(r => r.cat)])];
-      for (let i = 0; i < allCats.length; i++) {
-        await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', req.user.id, allCats[i], i);
+      let order = 0;
+      for (const c of DEFAULT_CATS_SEED) {
+        await db.run('INSERT OR IGNORE INTO categories (user_id, name, group_name, sort_order) VALUES (?, ?, ?, ?)', req.user.id, c.name, c.group, order++);
+      }
+      for (const r of taskCats) {
+        await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', req.user.id, r.cat, order++);
       }
       cats = await db.all(
-        'SELECT id, name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
+        'SELECT id, name, group_name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
         req.user.id
       );
     }
