@@ -15,7 +15,6 @@ export function CategoryPicker({ value, onSelect, onCancel }: Props) {
   const [loading, setLoading] = useState(true);
   const [editId, setEditId] = useState<number | null>(null);
   const [editName, setEditName] = useState('');
-  const [newName, setNewName] = useState('');
   const editRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,26 +45,9 @@ export function CategoryPicker({ value, onSelect, onCancel }: Props) {
     });
     if (res.ok) {
       setCats(prev => prev.map(c => c.id === id ? { ...c, name: trimmed } : c));
-      // 選択中のカテゴリを rename した場合は親に通知して閉じる
       if (oldName === value) { onSelect(trimmed); return; }
     }
     setEditId(null);
-  }
-
-  async function handleAdd() {
-    const trimmed = newName.trim();
-    if (!trimmed) return;
-    const res = await fetch(`${API_BASE}/api/categories`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ name: trimmed }),
-    });
-    if (res.ok) {
-      const cat: Cat = await res.json();
-      setCats(prev => [...prev, cat]);
-      setNewName('');
-    }
   }
 
   async function handleDelete(id: number) {
@@ -89,7 +71,7 @@ export function CategoryPicker({ value, onSelect, onCancel }: Props) {
         </div>
 
         {/* リスト */}
-        <div style={{ overflowY: 'auto', flex: 1 }}>
+        <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '8px' }}>
           {loading && (
             <div style={{ padding: '24px', textAlign: 'center', color: '#999', fontSize: '13px' }}>読み込み中…</div>
           )}
@@ -144,23 +126,8 @@ export function CategoryPicker({ value, onSelect, onCancel }: Props) {
             </div>
           ))}
         </div>
-
-        {/* 新規追加 */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px 16px', borderTop: '1px solid #f0ebe3', flexShrink: 0 }}>
-          <input
-            placeholder="新しいカテゴリ…"
-            value={newName}
-            onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            style={{ flex: 1, fontSize: '13px', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e8e2da', background: '#faf8f5', color: '#1A1A1A', outline: 'none' }}
-          />
-          <button
-            onClick={handleAdd}
-            disabled={!newName.trim()}
-            style={{ padding: '8px 14px', borderRadius: '8px', border: 'none', background: newName.trim() ? '#7F77DD' : '#e8e2da', color: newName.trim() ? '#fff' : '#999', fontSize: '13px', fontWeight: 600, cursor: newName.trim() ? 'pointer' : 'default', flexShrink: 0 }}
-          >追加</button>
-        </div>
       </div>
     </div>
   );
 }
+
