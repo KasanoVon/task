@@ -441,41 +441,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         </div>
       )}
 
-      {/* 残りタスクキュー */}
-      {(() => {
-        const queue = todayTasks.filter(t => !t.done && t.id !== currentTask?.id);
-        const doneList = todayTasks.filter(t => t.done);
-        if (queue.length === 0 && doneList.length === 0) return null;
-        return (
-          <div className="fq-wrap">
-            {queue.length > 0 && (
-              <>
-                <div className="fq-head">残り {queue.length} 件</div>
-                {queue.map(t => (
-                  <div key={t.id} className="fq-item">
-                    <div className={`fq-bar ${t.type === 'timed' ? 'fq-timed' : t.type === 'repeat' ? 'fq-repeat' : 'fq-normal'}`} />
-                    <span className="fq-name">{t.name}</span>
-                    <span className="fq-dur">{durStr(t.dur)}</span>
-                  </div>
-                ))}
-              </>
-            )}
-            {doneList.length > 0 && (
-              <>
-                <div className="fq-head fq-head-done">完了 {doneList.length} 件</div>
-                {doneList.map(t => (
-                  <div key={t.id} className="fq-item fq-done">
-                    <div className="fq-bar fq-bar-done" />
-                    <span className="fq-name">{t.name}</span>
-                    <span className="fq-dur">{durStr(t.dur)}</span>
-                  </div>
-                ))}
-              </>
-            )}
-          </div>
-        );
-      })()}
-
       {/* 割り込みタスク入力 */}
       <div className="qi-wrap">
         <div className="qi-head">＋ 割り込みタスク</div>
