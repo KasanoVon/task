@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTask } from '../context/TaskContext';
 import { TaskModal } from './TaskModal';
 import { durStr } from '../utils/dur';
+import { UserMenu } from './UserMenu';
 import type { Task } from '../types';
 
 function pad(n: number) { return String(n).padStart(2, '0'); }
@@ -325,10 +326,7 @@ export function CalendarScreen({ onShowFocus: _onShowFocus, onShowList: _onShowL
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
-          <button style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }} onClick={onLogout}>ログアウト</button>
-        </div>
+        <UserMenu username={username} onLogout={onLogout} />
       </div>
 
       <div style={{ padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', flex: 1 }}>

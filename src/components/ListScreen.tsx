@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { durStr } from '../utils/dur';
 import { useTask } from '../context/TaskContext';
 import { TaskModal } from './TaskModal';
+import { UserMenu } from './UserMenu';
 import type { Task } from '../types';
 
 const RUNIT_JP: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
@@ -288,10 +289,7 @@ export function ListScreen({ onShowFocus, username, onLogout }: Props) {
     <div className="screen" style={{ display: 'flex', flexDirection: 'column', padding: 0 }}>
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title-accent" style={{ fontSize: '15px', fontWeight: 600 }}>{dateStr()}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
-          <button style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }} onClick={onLogout}>ログアウト</button>
-        </div>
+        <UserMenu username={username} onLogout={onLogout} />
       </div>
 
       {formOpen && <TaskModal onClose={() => setFormOpen(false)} />}

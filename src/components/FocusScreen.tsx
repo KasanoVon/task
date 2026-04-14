@@ -3,7 +3,7 @@ import { useTask } from '../context/TaskContext';
 import { DifficultyPicker } from './DifficultyPicker';
 import { CategoryPicker } from './CategoryPicker';
 import { DurationPicker } from './DurationPicker';
-import { usePush } from '../hooks/usePush';
+import { UserMenu } from './UserMenu';
 import type { Task } from '../types';
 import { durStr } from '../utils/dur';
 
@@ -59,7 +59,6 @@ interface Props {
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
   const { state, completeTask, reorderTasks, addTask } = useTask();
   const { tasks } = state;
-  const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, enable: pushEnable, disable: pushDisable } = usePush();
 
   const [clockStr, setClockStr] = useState(now());
   const [nextStr, setNextStr] = useState('次の予定：なし');
@@ -71,17 +70,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
   const [quickName, setQuickName] = useState('');
   const [quickAdding, setQuickAdding] = useState(false);
   const [taskNames, setTaskNames] = useState<string[]>([]);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [menuOpen]);
 
   useEffect(() => {
     const API_BASE = import.meta.env.VITE_API_BASE ?? '';
@@ -298,14 +286,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     setDimmedU(true);
   }
 
-  function exportCSV() {
-    const API_BASE = import.meta.env.VITE_API_BASE ?? '';
-    const a = document.createElement('a');
-    a.href = `${API_BASE}/api/tasks/export`;
-    a.download = '';
-    a.click();
-    setMenuOpen(false);
-  }
 
   const d = new Date();
   const days = ['日', '月', '火', '水', '木', '金', '土'];
@@ -318,62 +298,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       {quickDurOpen && <DurationPicker value={quickDur} onConfirm={v => { setQuickDur(v); setQuickDurOpen(false); }} onCancel={() => setQuickDurOpen(false)} />}
       <div className="topbar topbar-accent" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
         <span className="tb-title tb-title-accent">{dateStr}</span>
-        <div ref={menuRef} style={{ position: 'relative' }}>
-          {/* トリガーボタン */}
-          <button
-            onClick={() => setMenuOpen(o => !o)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '999px', padding: '4px 10px 4px 6px', cursor: 'pointer' }}
-          >
-            <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 700, color: '#fff' }}>
-              {username.charAt(0).toUpperCase()}
-            </span>
-            <span style={{ fontSize: '12px', color: '#fff', fontWeight: 500 }}>{username}</span>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
-              <polyline points="2,3.5 5,6.5 8,3.5" />
-            </svg>
-          </button>
-
-          {/* ドロップダウン */}
-          {menuOpen && (
-            <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, background: '#fff', borderRadius: '14px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', minWidth: '210px', overflow: 'hidden', zIndex: 100 }}>
-              {/* ヘッダー */}
-              <div style={{ padding: '12px 16px 10px', borderBottom: '1px solid #f0ebe3' }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#1A1A1A' }}>{username}</div>
-                <div style={{ fontSize: '11px', color: '#B4AFA9', marginTop: '1px' }}>としてログイン中</div>
-              </div>
-              {/* 更新通知 */}
-              {pushSupported && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', borderBottom: '1px solid #f5f0eb' }}>
-                  <span style={{ fontSize: '13px', color: '#1A1A1A' }}>更新通知</span>
-                  <button
-                    disabled={pushLoading}
-                    onClick={pushSubscribed ? pushDisable : pushEnable}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: pushLoading ? 'wait' : 'pointer', padding: 0 }}
-                  >
-                    <span style={{ fontSize: '11px', color: pushSubscribed ? '#639922' : '#B4AFA9', fontWeight: 600 }}>{pushSubscribed ? 'オン' : 'オフ'}</span>
-                    <div style={{ width: 36, height: 20, borderRadius: 10, background: pushSubscribed ? '#639922' : '#D0CCC7', position: 'relative', transition: 'background .2s' }}>
-                      <div style={{ position: 'absolute', top: 2, left: pushSubscribed ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-                    </div>
-                  </button>
-                </div>
-              )}
-              {/* CSV エクスポート */}
-              <button onClick={exportCSV} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '11px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f5f0eb', fontSize: '13px', color: '#1A1A1A', cursor: 'pointer', textAlign: 'left' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#8C7B6E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/>
-                </svg>
-                CSV エクスポート
-              </button>
-              {/* ログアウト */}
-              <button onClick={() => { setMenuOpen(false); onLogout(); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '11px 16px', background: 'none', border: 'none', fontSize: '13px', color: '#C0392B', cursor: 'pointer', textAlign: 'left' }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C0392B" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/><polyline points="11,11 14,8 11,5"/><line x1="14" y1="8" x2="6" y2="8"/>
-                </svg>
-                ログアウト
-              </button>
-            </div>
-          )}
-        </div>
+        <UserMenu username={username} onLogout={onLogout} />
       </div>
       <div style={{ padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', flex: 1 }}>
 
