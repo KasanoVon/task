@@ -193,12 +193,12 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       });
       if (timedNext.length > 0) {
         timedNext.sort((a, b) => {
-          const ta = a.type === 'timed' ? (a.end_time ?? '') : (a.rtime ?? '');
-          const tb = b.type === 'timed' ? (b.end_time ?? '') : (b.rtime ?? '');
+          const ta = a.type === 'timed' ? (a.start_time ?? '') : (a.rtime ?? '');
+          const tb = b.type === 'timed' ? (b.start_time ?? '') : (b.rtime ?? '');
           return ta < tb ? -1 : 1;
         });
         const nx = timedNext[0];
-        const t = nx.type === 'timed' ? (nx.end_time ?? '') : (nx.rtime ?? '');
+        const t = nx.type === 'timed' ? (nx.start_time ?? '') : (nx.rtime ?? '');
         setNextStr('次の予定：' + t + ' ' + nx.name);
       } else {
         // 通常タスクの2番目（currentTaskの次）を表示
