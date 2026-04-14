@@ -101,6 +101,16 @@ await client.executeMultiple(`
 
   CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
 
+  CREATE TABLE IF NOT EXISTS categories (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    name       TEXT    NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(user_id, name)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_categories_user_id ON categories(user_id);
+
   CREATE TABLE IF NOT EXISTS daily_logs (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id   TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -208,6 +218,16 @@ try {
   }
 } catch (e) {
   console.error('streaks 移行エラー:', e);
+}
+
+// categories: 既存ユーザーの tasks.cat を取り込む（初回のみ）
+try {
+  await client.execute(`
+    INSERT OR IGNORE INTO categories (user_id, name, sort_order)
+    SELECT DISTINCT user_id, cat, 0 FROM tasks WHERE cat IS NOT NULL AND cat != ''
+  `);
+} catch (e) {
+  console.error('categories seed エラー:', e);
 }
 
 console.log('マイグレーション完了');
@@ -575,6 +595,90 @@ app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
     const id = parseInt(req.params.id);
     await db.run('DELETE FROM daily_logs WHERE task_id = ? AND user_id = ?', id, req.user.id);
     await db.run('DELETE FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
+    return res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// ── カテゴリ API ────────────────────────────────────────
+
+const DEFAULT_CATS = ['掃除', '片付け', '料理', '業務・タスク', '勉強', '資格', '運動', '体調管理', '遊び', '娯楽', '支出', '投資', 'その他'];
+
+// カテゴリ一覧
+app.get('/api/categories', requireAuth, async (req, res) => {
+  try {
+    let cats = await db.all(
+      'SELECT id, name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
+      req.user.id
+    );
+    // 初回アクセス時: デフォルト + tasks の既存 cat をシード
+    if (cats.length === 0) {
+      const taskCats = await db.all('SELECT DISTINCT cat FROM tasks WHERE user_id = ? AND cat IS NOT NULL AND cat != \'\'', req.user.id);
+      const allCats = [...new Set([...DEFAULT_CATS, ...taskCats.map(r => r.cat)])];
+      for (let i = 0; i < allCats.length; i++) {
+        await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', req.user.id, allCats[i], i);
+      }
+      cats = await db.all(
+        'SELECT id, name, sort_order FROM categories WHERE user_id = ? ORDER BY sort_order ASC, id ASC',
+        req.user.id
+      );
+    }
+    return res.json(cats);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// カテゴリ追加
+app.post('/api/categories', requireAuth, async (req, res) => {
+  try {
+    const name = String(req.body?.name ?? '').trim();
+    if (!name) return res.status(400).json({ error: 'invalid_name' });
+    const maxOrder = await db.get('SELECT MAX(sort_order) as m FROM categories WHERE user_id = ?', req.user.id);
+    const sortOrder = (maxOrder?.m ?? -1) + 1;
+    await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', req.user.id, name, sortOrder);
+    const cat = await db.get('SELECT id, name, sort_order FROM categories WHERE user_id = ? AND name = ?', req.user.id, name);
+    return res.json(cat);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// カテゴリ更新（rename → tasks.cat にカスケード）
+app.patch('/api/categories/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const b = req.body ?? {};
+    const cat = await db.get('SELECT * FROM categories WHERE id = ? AND user_id = ?', id, req.user.id);
+    if (!cat) return res.status(404).json({ error: 'not_found' });
+
+    if ('name' in b) {
+      const newName = String(b.name).trim();
+      if (!newName) return res.status(400).json({ error: 'invalid_name' });
+      // tasks.cat を一括更新（rename cascade）
+      await db.run('UPDATE tasks SET cat = ? WHERE cat = ? AND user_id = ?', newName, cat.name, req.user.id);
+      await db.run('UPDATE categories SET name = ? WHERE id = ? AND user_id = ?', newName, id, req.user.id);
+    }
+    if ('sort_order' in b) {
+      await db.run('UPDATE categories SET sort_order = ? WHERE id = ? AND user_id = ?', Number(b.sort_order), id, req.user.id);
+    }
+    const updated = await db.get('SELECT id, name, sort_order FROM categories WHERE id = ? AND user_id = ?', id, req.user.id);
+    return res.json(updated);
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// カテゴリ削除（tasks は cat 名をそのまま保持）
+app.delete('/api/categories/:id', requireAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await db.run('DELETE FROM categories WHERE id = ? AND user_id = ?', id, req.user.id);
     return res.status(204).send();
   } catch (error) {
     console.error(error);
