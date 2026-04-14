@@ -840,6 +840,39 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
 
 // ── プッシュ通知 API ────────────────────────────────────
 
+// デバッグ: 通知チェッカーの状態を確認
+app.get('/api/push/debug', requireAuth, async (req, res) => {
+  const nowUTC = new Date();
+  const nowJST = new Date(Date.now() + JST);
+  const todayStr = nowJST.toISOString().slice(0, 10);
+  const currentMin = nowJST.getUTCHours() * 60 + nowJST.getUTCMinutes();
+
+  const sub = await db.get('SELECT subscription_json FROM push_subscriptions WHERE user_id = ?', req.user.id);
+  const rows = await db.all(`
+    SELECT t.id, t.name, t.start_time, t.end_time, t.task_date, t.done, COALESCE(t.alert_min, 30) AS alert_min
+    FROM tasks t
+    WHERE t.user_id = ? AND t.type = 'timed' AND t.done = 0
+      AND (t.task_date IS NULL OR t.task_date = ?)
+      AND t.start_time IS NOT NULL
+  `, req.user.id, todayStr);
+
+  const checks = rows.map(t => {
+    const [sh, sm] = t.start_time.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    const diff = startMin - currentMin;
+    return { ...t, startMin, currentMin, diff, willNotify: diff > 0 && diff <= t.alert_min };
+  });
+
+  res.json({
+    serverUTC: nowUTC.toISOString(),
+    serverJST: nowJST.toISOString().replace('Z', '+09:00'),
+    todayStr,
+    currentMin,
+    hasSubscription: !!sub,
+    tasks: checks,
+  });
+});
+
 // VAPID 公開鍵（認証なしで取得可能）
 app.get('/api/push/vapid-public-key', (_req, res) => {
   if (!VAPID_PUBLIC_KEY) return res.status(503).json({ error: 'vapid_not_ready' });
