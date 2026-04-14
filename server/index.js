@@ -230,6 +230,29 @@ try {
   console.error('categories seed エラー:', e);
 }
 
+// categories: 全ユーザーに最新のデフォルトカテゴリを追加（不足分のみ）
+try {
+  const DEFAULT_CATS_SEED = [
+    '掃除', '片付け', '料理', '洗濯', '買い物', '入浴・身支度',
+    '業務・タスク', '会議', '勉強', '資格',
+    '運動', '体調管理', '医療・受診',
+    '支出', '投資', '手続き・書類',
+    '読書', '娯楽', '趣味',
+    '家族', '友人・交流',
+    '移動・外出', 'その他',
+  ];
+  const users = await db.all('SELECT id FROM users');
+  for (const user of users) {
+    const maxRow = await db.get('SELECT MAX(sort_order) as m FROM categories WHERE user_id = ?', user.id);
+    let order = (maxRow?.m ?? -1) + 1;
+    for (const name of DEFAULT_CATS_SEED) {
+      await db.run('INSERT OR IGNORE INTO categories (user_id, name, sort_order) VALUES (?, ?, ?)', user.id, name, order++);
+    }
+  }
+} catch (e) {
+  console.error('categories デフォルト追加エラー:', e);
+}
+
 console.log('マイグレーション完了');
 
 const isProd = process.env.NODE_ENV === 'production';
@@ -604,7 +627,22 @@ app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
 
 // ── カテゴリ API ────────────────────────────────────────
 
-const DEFAULT_CATS = ['掃除', '片付け', '料理', '業務・タスク', '勉強', '資格', '運動', '体調管理', '遊び', '娯楽', '支出', '投資', 'その他'];
+const DEFAULT_CATS = [
+  // 生活
+  '掃除', '片付け', '料理', '洗濯', '買い物', '入浴・身支度',
+  // 仕事・学習
+  '業務・タスク', '会議', '勉強', '資格',
+  // 健康
+  '運動', '体調管理', '医療・受診',
+  // お金・手続き
+  '支出', '投資', '手続き・書類',
+  // 趣味・余暇
+  '読書', '娯楽', '趣味',
+  // 人間関係
+  '家族', '友人・交流',
+  // その他
+  '移動・外出', 'その他',
+];
 
 // カテゴリ一覧
 app.get('/api/categories', requireAuth, async (req, res) => {
