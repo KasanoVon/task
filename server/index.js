@@ -719,6 +719,28 @@ app.delete('/api/tasks/:id', requireAuth, async (req, res) => {
   }
 });
 
+// タスク CSV エクスポート
+app.get('/api/tasks/export', requireAuth, async (req, res) => {
+  try {
+    const tasks = await db.all('SELECT * FROM tasks WHERE user_id = ? ORDER BY sort_order ASC, id ASC', req.user.id);
+    const header = 'id,name,type,diff,cat,dur,done,task_date,start_time,end_time,runit,rnum,rtime,wdays,end_date,created_at';
+    const rows = tasks.map(t =>
+      [t.id, `"${(t.name ?? '').replace(/"/g, '""')}"`, t.type, t.diff,
+       `"${(t.cat ?? '').replace(/"/g, '""')}"`, t.dur, t.done ? 1 : 0,
+       t.task_date ?? '', t.start_time ?? '', t.end_time ?? '',
+       t.runit ?? '', t.rnum ?? '', t.rtime ?? '',
+       t.wdays ?? '[]', t.end_date ?? '', t.created_at ?? ''].join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="tasks-${todayJST()}.csv"`);
+    return res.send('\uFEFF' + csv); // BOM付きUTF-8（Excel対応）
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // ── カテゴリ API ────────────────────────────────────────
 
 // カテゴリ一覧（master_categories から取得・user_id 不要）
