@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import webpush from 'web-push';
 
 /** 旧フォーマット文字列 or 数値 → 分（整数） */
 function parseDurStr(s) {
@@ -122,6 +123,20 @@ await client.executeMultiple(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_daily_logs_user_date ON daily_logs(user_id, log_date);
+
+  CREATE TABLE IF NOT EXISTS push_subscriptions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    endpoint   TEXT    NOT NULL UNIQUE,
+    p256dh     TEXT    NOT NULL,
+    auth       TEXT    NOT NULL,
+    created_at TEXT    NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    key   TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  );
 
 `);
 
@@ -291,6 +306,29 @@ try {
 }
 
 console.log('マイグレーション完了');
+
+// ── VAPID キー（初回のみ生成・DB に永続化）─────────────────
+let VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY ?? '';
+let VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY ?? '';
+try {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    const row = await db.get("SELECT value FROM app_settings WHERE key = 'vapid_public'");
+    if (row) {
+      VAPID_PUBLIC_KEY  = row.value;
+      VAPID_PRIVATE_KEY = (await db.get("SELECT value FROM app_settings WHERE key = 'vapid_private'"))?.value ?? '';
+    } else {
+      const keys = webpush.generateVAPIDKeys();
+      VAPID_PUBLIC_KEY  = keys.publicKey;
+      VAPID_PRIVATE_KEY = keys.privateKey;
+      await db.run("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('vapid_public',  ?)", VAPID_PUBLIC_KEY);
+      await db.run("INSERT OR REPLACE INTO app_settings (key, value) VALUES ('vapid_private', ?)", VAPID_PRIVATE_KEY);
+      console.log('VAPID キーを生成しました');
+    }
+  }
+  webpush.setVapidDetails('mailto:admin@example.com', VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+} catch (e) {
+  console.error('VAPID 初期化エラー:', e);
+}
 
 const isProd = process.env.NODE_ENV === 'production';
 
@@ -782,6 +820,43 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
   }
 });
 
+// ── プッシュ通知 API ────────────────────────────────────
+
+// VAPID 公開鍵を返す（認証不要でも OK だが requireAuth で統一）
+app.get('/api/push/vapid-public-key', requireAuth, (_req, res) => {
+  res.json({ publicKey: VAPID_PUBLIC_KEY });
+});
+
+// プッシュ購読を登録
+app.post('/api/push/subscribe', requireAuth, async (req, res) => {
+  try {
+    const { endpoint, keys } = req.body;
+    if (!endpoint || !keys?.p256dh || !keys?.auth) return res.status(400).json({ error: 'invalid' });
+    await db.run(
+      `INSERT INTO push_subscriptions (user_id, endpoint, p256dh, auth)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(endpoint) DO UPDATE SET user_id = excluded.user_id, p256dh = excluded.p256dh, auth = excluded.auth`,
+      req.user.id, endpoint, keys.p256dh, keys.auth
+    );
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// プッシュ購読を削除
+app.delete('/api/push/unsubscribe', requireAuth, async (req, res) => {
+  try {
+    const { endpoint } = req.body;
+    if (endpoint) await db.run('DELETE FROM push_subscriptions WHERE user_id = ? AND endpoint = ?', req.user.id, endpoint);
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
 // ── 本番: SPA フォールバック ────────────────────────────
 
 if (isProd) {
@@ -796,3 +871,56 @@ app.listen(PORT, async () => {
   const userCount = await db.get('SELECT COUNT(*) as count FROM users');
   console.log(`ユーザー数: ${userCount?.count ?? 0}`);
 });
+
+// ── プッシュ通知バックグラウンド監視（1分ごと）─────────────
+const notifiedKeys = new Set(); // "user_id:task_id:date" — 再起動まで重複防止
+
+setInterval(async () => {
+  try {
+    const now = new Date();
+    const todayStr = now.toISOString().slice(0, 10);
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(now.getMinutes()).padStart(2, '0');
+    const currentMin = now.getHours() * 60 + now.getMinutes();
+
+    // 今日の未完了 timed タスクと、そのユーザーの push 購読をまとめて取得
+    const rows = await db.all(`
+      SELECT ps.user_id, ps.endpoint, ps.p256dh, ps.auth,
+             t.id AS task_id, t.name, t.start_time, COALESCE(t.alert_min, 30) AS alert_min
+      FROM push_subscriptions ps
+      JOIN tasks t ON t.user_id = ps.user_id
+      WHERE t.type = 'timed'
+        AND t.done = 0
+        AND (t.task_date IS NULL OR t.task_date = ?)
+        AND t.start_time IS NOT NULL
+    `, todayStr);
+
+    for (const row of rows) {
+      const [sh, sm] = row.start_time.split(':').map(Number);
+      const startMin = sh * 60 + sm;
+      const diff = startMin - currentMin; // 開始まで何分か
+      if (diff <= 0 || diff > row.alert_min) continue;
+
+      const key = `${row.user_id}:${row.task_id}:${todayStr}`;
+      if (notifiedKeys.has(key)) continue;
+      notifiedKeys.add(key);
+
+      const payload = JSON.stringify({
+        title: row.name,
+        body: `${diff}分後に開始します（${row.start_time}〜）`,
+        tag: `task-${row.task_id}`,
+      });
+      webpush.sendNotification(
+        { endpoint: row.endpoint, keys: { p256dh: row.p256dh, auth: row.auth } },
+        payload
+      ).catch(async err => {
+        // 410 Gone / 404 = 購読が無効 → 削除
+        if (err.statusCode === 410 || err.statusCode === 404) {
+          await db.run('DELETE FROM push_subscriptions WHERE endpoint = ?', row.endpoint).catch(() => {});
+        }
+      });
+    }
+  } catch (e) {
+    console.error('push check error:', e);
+  }
+}, 60 * 1000);

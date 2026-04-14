@@ -3,6 +3,7 @@ import { useTask } from '../context/TaskContext';
 import { DifficultyPicker } from './DifficultyPicker';
 import { CategoryPicker } from './CategoryPicker';
 import { DurationPicker } from './DurationPicker';
+import { usePush } from '../hooks/usePush';
 import type { Task } from '../types';
 import { durStr } from '../utils/dur';
 
@@ -58,6 +59,7 @@ interface Props {
 export function FocusScreen({ username, onLogout, onShowList: _onShowList, onShowCal: _onShowCal, onShowDone }: Props) {
   const { state, completeTask, reorderTasks, addTask } = useTask();
   const { tasks } = state;
+  const { supported: pushSupported, subscribed: pushSubscribed, enable: pushEnable, disable: pushDisable } = usePush();
 
   const [clockStr, setClockStr] = useState(now());
   const [nextStr, setNextStr] = useState('次の予定：なし');
@@ -298,6 +300,24 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
         <span className="tb-title tb-title-accent">{dateStr}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.85)' }}>{username}</span>
+          {pushSupported && (
+            <button
+              title={pushSubscribed ? '通知をオフにする' : '通知をオンにする'}
+              onClick={pushSubscribed ? pushDisable : pushEnable}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center', opacity: pushSubscribed ? 1 : 0.55 }}
+            >
+              {pushSubscribed ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                  <circle cx="18" cy="6" r="4" fill="#4ade80" stroke="none"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              )}
+            </button>
+          )}
           <button
             style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '999px', border: 'none', background: 'rgba(255,255,255,0.25)', color: '#fff', cursor: 'pointer' }}
             onClick={onLogout}
