@@ -60,19 +60,34 @@ CREATE TABLE IF NOT EXISTS daily_logs (
   logged_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE TABLE IF NOT EXISTS streaks (
-  id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id      TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  streak_date  TEXT    NOT NULL,
-  completed    INTEGER NOT NULL DEFAULT 0,
-  UNIQUE(user_id, streak_date)
-);
 `)
 
 // 既存 DB 向けカラム追加（列が既にある場合のエラーは無視）
 const addCols = ['ALTER TABLE tasks ADD COLUMN end_date TEXT']
 for (const sql of addCols) {
   try { await db.execute(sql) } catch (_) {}
+}
+
+// streaks テーブルが残っていれば daily_logs に統合して削除
+try {
+  const hasTbl = await db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='streaks'")
+  if (hasTbl.rows.length > 0) {
+    await db.execute(`
+      INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done, logged_at)
+      SELECT s.user_id, s.streak_date, 0, '(移行)', 'normal', '', 1,
+             s.streak_date || 'T00:00:00.000Z'
+      FROM streaks s
+      WHERE s.completed > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM daily_logs dl
+          WHERE dl.user_id = s.user_id AND dl.log_date = s.streak_date
+        )
+    `)
+    await db.execute('DROP TABLE IF EXISTS streaks')
+    console.log('streaks テーブルを daily_logs に統合しました')
+  }
+} catch (e) {
+  console.error('streaks 移行エラー:', e)
 }
 
 console.log('マイグレーション完了。')

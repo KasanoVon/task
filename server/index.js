@@ -96,14 +96,8 @@ await client.executeMultiple(`
     logged_at TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 
-  CREATE TABLE IF NOT EXISTS streaks (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id      TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    streak_date  TEXT    NOT NULL,
-    completed    INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(user_id, streak_date)
-  );
 `);
+
 
 // カラム追加マイグレーション（既存の場合は無視）
 for (const sql of [
@@ -119,45 +113,31 @@ for (const sql of [
   try { await client.execute(sql); } catch { /* カラムが既に存在する場合は無視 */ }
 }
 
-// streaks の UNIQUE(user_id, streak_date) 複合制約を確認。なければ再作成
-{
-  let needsRecreate = false;
-  try {
-    await client.execute(`
-      INSERT INTO streaks (user_id, streak_date, completed) VALUES ('__chk__', '__chk__', 0)
-      ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = completed + 0
-    `);
-    await client.execute(`DELETE FROM streaks WHERE user_id = '__chk__'`);
-  } catch {
-    needsRecreate = true;
-  }
-  if (needsRecreate) {
-    await client.execute('DROP TABLE IF EXISTS streaks');
-    await client.execute(`
-      CREATE TABLE streaks (
-        id           INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id      TEXT    NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        streak_date  TEXT    NOT NULL,
-        completed    INTEGER NOT NULL DEFAULT 0,
-        UNIQUE(user_id, streak_date)
-      )
-    `);
-    console.log('streaks テーブルを再作成しました（UNIQUE制約を追加）');
-  }
-}
-
 // user_id が NULL の無効セッションを削除
 await client.execute("DELETE FROM sessions WHERE user_id IS NULL OR user_id = ''");
 
-// daily_logs から streaks テーブルに不足分を補完（過去分の記録漏れ修正）
-await client.execute(`
-  INSERT INTO streaks (user_id, streak_date, completed)
-  SELECT user_id, log_date, COUNT(*) as completed
-  FROM daily_logs
-  WHERE log_date IS NOT NULL AND user_id IS NOT NULL
-  GROUP BY user_id, log_date
-  ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = MAX(streaks.completed, excluded.completed)
-`);
+// streaks テーブルが残っていれば daily_logs に統合して削除
+try {
+  const hasTbl = await client.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='streaks'");
+  if (hasTbl.rows.length > 0) {
+    // streaks にしかない日付を synthetic ログとして daily_logs に移行
+    await client.execute(`
+      INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done, logged_at)
+      SELECT s.user_id, s.streak_date, 0, '(移行)', 'normal', '', 1,
+             s.streak_date || 'T00:00:00.000Z'
+      FROM streaks s
+      WHERE s.completed > 0
+        AND NOT EXISTS (
+          SELECT 1 FROM daily_logs dl
+          WHERE dl.user_id = s.user_id AND dl.log_date = s.streak_date
+        )
+    `);
+    await client.execute('DROP TABLE IF EXISTS streaks');
+    console.log('streaks テーブルを daily_logs に統合しました');
+  }
+} catch (e) {
+  console.error('streaks 移行エラー:', e);
+}
 
 console.log('マイグレーション完了');
 
@@ -473,19 +453,9 @@ app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
 
     // 通常タスクをdone=1にする際、task_dateが未設定なら今日の日付を自動セット
     if (b.done === 1) {
-      const existing = await db.get('SELECT task_date, type, done FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
+      const existing = await db.get('SELECT task_date, type FROM tasks WHERE id = ? AND user_id = ?', id, req.user.id);
       if (existing && existing.type === 'normal' && !existing.task_date) {
         b.task_date = new Date().toISOString().slice(0, 10);
-      }
-      // POST /api/logs が失敗しても streak が記録されるようバックアップ記録
-      // まだ未完了のタスクの場合のみ（re-edit や undo での二重カウント防止）
-      if (existing && !existing.done) {
-        const td = new Date().toISOString().slice(0, 10);
-        await db.run(
-          `INSERT INTO streaks (user_id, streak_date, completed) VALUES (?, ?, 1)
-           ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = completed + 1`,
-          req.user.id, td
-        );
       }
     }
 
@@ -567,12 +537,6 @@ app.post('/api/logs', requireAuth, async (req, res) => {
       'INSERT INTO daily_logs (user_id, log_date, task_id, task_name, task_type, dur, done) VALUES (?, ?, ?, ?, ?, ?, ?)',
       req.user.id, today, b.task_id, b.task_name, b.task_type ?? 'normal', b.dur ?? '', b.done ?? 1
     );
-    // ストリーク更新
-    await db.run(
-      `INSERT INTO streaks (user_id, streak_date, completed) VALUES (?, ?, 1)
-       ON CONFLICT(user_id, streak_date) DO UPDATE SET completed = completed + 1`,
-      req.user.id, today
-    );
     return res.status(204).send();
   } catch (error) {
     console.error(error);
@@ -586,7 +550,6 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
   try {
     const days = parseInt(String(req.query.days ?? '14'));
 
-    // daily_logs を正とし、streaks を補完として使用
     // ドット表示用 rows（days日分）
     const rows = await db.all(
       `SELECT log_date AS streak_date, COUNT(*) AS completed
@@ -597,29 +560,13 @@ app.get('/api/streaks', requireAuth, async (req, res) => {
       req.user.id, `-${days} days`
     );
 
-    // streaks テーブルにしか記録がない日も拾う（後方互換）
-    const streakRows = await db.all(
-      `SELECT streak_date, completed FROM streaks
-       WHERE user_id = ? AND streak_date >= date('now', ?) AND completed > 0
-       ORDER BY streak_date DESC`,
-      req.user.id, `-${days} days`
-    );
-    for (const sr of streakRows) {
-      if (!rows.find(r => r.streak_date === sr.streak_date)) {
-        rows.push(sr);
-      }
-    }
-    rows.sort((a, b) => (b.streak_date > a.streak_date ? 1 : -1));
-
     // 連続日数計算（最大90日分さかのぼる）
     const allData = await db.all(
-      `SELECT log_date AS streak_date FROM daily_logs
+      `SELECT log_date AS streak_date
+       FROM daily_logs
        WHERE user_id = ? AND log_date >= date('now', '-90 days')
-       GROUP BY log_date
-       UNION
-       SELECT streak_date FROM streaks
-       WHERE user_id = ? AND completed > 0 AND streak_date >= date('now', '-90 days')`,
-      req.user.id, req.user.id
+       GROUP BY log_date`,
+      req.user.id
     );
     const doneDates = new Set(allData.map(r => r.streak_date));
 
