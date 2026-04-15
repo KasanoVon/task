@@ -168,9 +168,11 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     return nowHM >= (t.start_time ?? '00:00');
   });
   const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
+  // Focus candidates: all undone today tasks (normal + repeat), respecting sort_order
+  const focusCandidates = todayTasks.filter(t => !t.done && t.type !== 'timed');
   // トリガータスクが完了済みなら nextRepeat を通常タスクより優先
   const triggerDone = nextRepeatTriggerId != null && !tasks.some(t => t.id === nextRepeatTriggerId && !t.done);
-  const currentTask = focusRepeat ?? pendingTimed ?? (nextRepeat && triggerDone ? nextRepeat : null) ?? normalTasks[0] ?? nextRepeat ?? null;
+  const currentTask = focusRepeat ?? pendingTimed ?? (nextRepeat && triggerDone ? nextRepeat : null) ?? focusCandidates[0] ?? nextRepeat ?? null;
 
   useEffect(() => {
     const tick = () => {
@@ -328,7 +330,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       )}
 
       {/* 定期タスク割り込み */}
-      {intR && !dimmedR && intR.id !== focusRepeatId && intR.id !== nextRepeatId && (
+      {intR && !dimmedR && intR.id !== focusRepeatId && intR.id !== nextRepeatId && intR.id !== currentTask?.id && (
         <div className="interrupt int-routine active">
           <div className="int-icon int-icon-r">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
@@ -398,8 +400,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
               } else if (nextRepeat && currentTask?.id === nextRepeat.id) {
                 setNextRepeat(null);
               } else if (currentTask) {
-                // 通常タスク: normalTasks の次タスクの後ろに移動してサーバーに保存
-                const nextNormal = normalTasks[1];
+                // 先頭タスクを2番目の後ろに移動してサーバーに保存
+                const nextNormal = focusCandidates[1];
                 if (nextNormal) {
                   const allIds = tasks.map(t => t.id);
                   const without = allIds.filter(id => id !== currentTask.id);
