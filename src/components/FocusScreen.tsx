@@ -167,8 +167,8 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     // 今日のタスク: start_time を過ぎていたら表示
     return nowHM >= (t.start_time ?? '00:00');
   });
-  // Focus candidates: all undone today tasks (normal + repeat), respecting sort_order
-  const focusCandidates = todayTasks.filter(t => !t.done && t.type !== 'timed');
+  // Focus candidates: all undone today tasks (normal + repeat + timed), respecting sort_order
+  const focusCandidates = todayTasks.filter(t => !t.done);
   // トリガータスクが完了済みなら nextRepeat を通常タスクより優先
   const triggerDone = nextRepeatTriggerId != null && !tasks.some(t => t.id === nextRepeatTriggerId && !t.done);
   const currentTask = focusRepeat ?? pendingTimed ?? (nextRepeat && triggerDone ? nextRepeat : null) ?? focusCandidates[0] ?? nextRepeat ?? null;
@@ -309,7 +309,7 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
       </div>
 
       {/* 期限あり割り込み */}
-      {intU && !dimmedU && (
+      {intU && !dimmedU && intU.id !== currentTask?.id && (
         <div className="interrupt int-urgent active">
           <div className="int-icon int-icon-u">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
