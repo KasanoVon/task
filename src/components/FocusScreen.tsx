@@ -167,7 +167,6 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     // 今日のタスク: start_time を過ぎていたら表示
     return nowHM >= (t.start_time ?? '00:00');
   });
-  const normalTasks = tasks.filter(t => !t.done && t.type === 'normal' && (!t.task_date || t.task_date === todayStr));
   // Focus candidates: all undone today tasks (normal + repeat), respecting sort_order
   const focusCandidates = todayTasks.filter(t => !t.done && t.type !== 'timed');
   // トリガータスクが完了済みなら nextRepeat を通常タスクより優先
