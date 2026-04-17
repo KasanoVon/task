@@ -136,6 +136,13 @@ await client.executeMultiple(`
     created_at        TEXT NOT NULL DEFAULT (datetime('now'))
   );
 
+  CREATE TABLE IF NOT EXISTS user_push_prefs (
+    user_id    TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    morning    INTEGER NOT NULL DEFAULT 1,
+    task_alert INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
   CREATE TABLE IF NOT EXISTS app_settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -912,6 +919,11 @@ app.post('/api/push/subscribe', requireAuth, async (req, res) => {
        ON CONFLICT(user_id) DO UPDATE SET subscription_json = excluded.subscription_json, created_at = excluded.created_at`,
       req.user.id, JSON.stringify(subscription), new Date().toISOString()
     );
+    // 通知設定がなければデフォルト（両方オン）で作成
+    await db.run(
+      `INSERT INTO user_push_prefs (user_id) VALUES (?) ON CONFLICT(user_id) DO NOTHING`,
+      req.user.id
+    );
     return res.status(204).send();
   } catch (error) {
     console.error(error);
@@ -924,6 +936,38 @@ app.delete('/api/push/subscribe', requireAuth, async (req, res) => {
   try {
     await db.run('DELETE FROM push_subscriptions WHERE user_id = ?', req.user.id);
     return res.status(204).send();
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// 通知設定取得
+app.get('/api/push/prefs', requireAuth, async (req, res) => {
+  try {
+    const row = await db.get('SELECT morning, task_alert FROM user_push_prefs WHERE user_id = ?', req.user.id);
+    return res.json({ morning: row ? Boolean(row.morning) : true, task_alert: row ? Boolean(row.task_alert) : true });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ error: 'server_error' });
+  }
+});
+
+// 通知設定更新
+app.patch('/api/push/prefs', requireAuth, async (req, res) => {
+  try {
+    const { morning, task_alert } = req.body ?? {};
+    // 行が存在しなければデフォルトで作成
+    await db.run(`INSERT INTO user_push_prefs (user_id) VALUES (?) ON CONFLICT(user_id) DO NOTHING`, req.user.id);
+    const updates = [];
+    const params = [];
+    if (morning != null) { updates.push('morning = ?'); params.push(morning ? 1 : 0); }
+    if (task_alert != null) { updates.push('task_alert = ?'); params.push(task_alert ? 1 : 0); }
+    if (updates.length > 0) {
+      await db.run(`UPDATE user_push_prefs SET ${updates.join(', ')} WHERE user_id = ?`, ...params, req.user.id);
+    }
+    const row = await db.get('SELECT morning, task_alert FROM user_push_prefs WHERE user_id = ?', req.user.id);
+    return res.json({ morning: Boolean(row.morning), task_alert: Boolean(row.task_alert) });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'server_error' });
@@ -946,26 +990,60 @@ app.listen(PORT, async () => {
 });
 
 // ── プッシュ通知バックグラウンド監視（1分ごと）─────────────
-const notifiedKeys = new Set(); // "user_id:task_id:date:start_time" — 再起動まで重複防止
+const notifiedKeys = new Set(); // 再起動まで重複防止
+
+async function sendPush(userId, subscriptionJson, payload) {
+  let sub;
+  try { sub = JSON.parse(subscriptionJson); } catch { return; }
+  webpush.sendNotification(sub, JSON.stringify(payload)).catch(async err => {
+    if (err.statusCode === 410 || err.statusCode === 404) {
+      await db.run('DELETE FROM push_subscriptions WHERE user_id = ?', userId).catch(() => {});
+    }
+  });
+}
 
 setInterval(async () => {
   try {
-    // タスクの時刻はユーザーのローカル時刻（JST = UTC+9）で保存されているため JST で比較する
     const JST_OFFSET = 9 * 60 * 60 * 1000;
     const nowJST = new Date(Date.now() + JST_OFFSET);
-    const todayStr = nowJST.toISOString().slice(0, 10); // JST 日付
-    const currentMin = nowJST.getUTCHours() * 60 + nowJST.getUTCMinutes(); // JST 分
+    const todayStr = nowJST.toISOString().slice(0, 10);
+    const jstHH = nowJST.getUTCHours();
+    const jstMM = nowJST.getUTCMinutes();
+    const currentMin = jstHH * 60 + jstMM;
 
-    // 今日の未完了 timed タスクと、そのユーザーの push 購読をまとめて取得
+    // ── 朝6時のタスク登録リマインダー ──────────────────
+    if (jstHH === 6 && jstMM === 0) {
+      const morningUsers = await db.all(`
+        SELECT ps.user_id, ps.subscription_json
+        FROM push_subscriptions ps
+        LEFT JOIN user_push_prefs upp ON upp.user_id = ps.user_id
+        WHERE COALESCE(upp.morning, 1) = 1
+      `);
+      for (const u of morningUsers) {
+        const key = `morning:${u.user_id}:${todayStr}`;
+        if (notifiedKeys.has(key)) continue;
+        notifiedKeys.add(key);
+        await sendPush(u.user_id, u.subscription_json, {
+          title: 'おはようございます！',
+          body: '今日のタスクを登録しましょう ☀️',
+          icon: '/favicon.svg',
+          url: '/',
+        });
+      }
+    }
+
+    // ── 期限ありタスクの開始前通知 ─────────────────────
     const rows = await db.all(`
       SELECT ps.user_id, ps.subscription_json,
              t.id AS task_id, t.name, t.start_time, COALESCE(t.alert_min, 30) AS alert_min
       FROM push_subscriptions ps
       JOIN tasks t ON t.user_id = ps.user_id
+      LEFT JOIN user_push_prefs upp ON upp.user_id = ps.user_id
       WHERE t.type = 'timed'
         AND t.done = 0
         AND (t.task_date IS NULL OR t.task_date = ?)
         AND t.start_time IS NOT NULL
+        AND COALESCE(upp.task_alert, 1) = 1
     `, todayStr);
 
     for (const row of rows) {
@@ -978,19 +1056,11 @@ setInterval(async () => {
       if (notifiedKeys.has(key)) continue;
       notifiedKeys.add(key);
 
-      let pushSub;
-      try { pushSub = JSON.parse(row.subscription_json); } catch { continue; }
-
-      const payload = JSON.stringify({
+      await sendPush(row.user_id, row.subscription_json, {
         title: row.name,
         body: `${diff}分後に開始します（${row.start_time}〜）`,
         icon: '/favicon.svg',
         url: '/',
-      });
-      webpush.sendNotification(pushSub, payload).catch(async err => {
-        if (err.statusCode === 410 || err.statusCode === 404) {
-          await db.run('DELETE FROM push_subscriptions WHERE user_id = ?', row.user_id).catch(() => {});
-        }
       });
     }
   } catch (e) {

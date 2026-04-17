@@ -10,6 +10,11 @@ function urlBase64ToUint8Array(base64String: string): ArrayBuffer {
   return arr.buffer;
 }
 
+export interface PushPrefs {
+  morning: boolean;
+  task_alert: boolean;
+}
+
 export function usePush() {
   const supported =
     typeof Notification !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window;
@@ -19,6 +24,8 @@ export function usePush() {
   );
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [prefs, setPrefs] = useState<PushPrefs>({ morning: true, task_alert: true });
+  const [prefsLoading, setPrefsLoading] = useState(false);
 
   useEffect(() => {
     if (!supported) return;
@@ -27,7 +34,6 @@ export function usePush() {
       reg.pushManager.getSubscription().then(async (sub) => {
         if (!sub) { setSubscribed(false); return; }
         setSubscribed(true);
-        // ブラウザに購読があればサーバーへ再同期（スキーマ移行後の復旧対応）
         try {
           await fetch(`${API_BASE}/api/push/subscribe`, {
             method: 'POST',
@@ -50,6 +56,15 @@ export function usePush() {
 
     return () => { if (permissionStatus) permissionStatus.onchange = null; };
   }, [supported]);
+
+  // 購読中のとき通知設定を取得
+  useEffect(() => {
+    if (!subscribed) return;
+    fetch(`${API_BASE}/api/push/prefs`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data: PushPrefs | null) => { if (data) setPrefs(data); })
+      .catch(() => {});
+  }, [subscribed]);
 
   async function enable() {
     if (!supported || loading) return;
@@ -105,5 +120,24 @@ export function usePush() {
     }
   }
 
-  return { supported, permission, subscribed, loading, enable, disable };
+  async function setPref(key: keyof PushPrefs, value: boolean) {
+    // 未購読で ON にする場合はまず購読
+    if (!subscribed && value) await enable();
+    setPrefsLoading(true);
+    try {
+      const r = await fetch(`${API_BASE}/api/push/prefs`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ [key]: value }),
+      });
+      if (r.ok) setPrefs(await r.json());
+    } catch (e) {
+      console.error('Push prefs update error:', e);
+    } finally {
+      setPrefsLoading(false);
+    }
+  }
+
+  return { supported, permission, subscribed, loading, prefs, prefsLoading, enable, disable, setPref };
 }

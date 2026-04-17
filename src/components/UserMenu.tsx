@@ -91,7 +91,7 @@ interface Props {
 }
 
 export function UserMenu({ username, onLogout }: Props) {
-  const { supported: pushSupported, subscribed: pushSubscribed, loading: pushLoading, enable: pushEnable, disable: pushDisable } = usePush();
+  const { supported: pushSupported, loading: pushLoading, prefs, prefsLoading, setPref } = usePush();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -141,17 +141,31 @@ export function UserMenu({ username, onLogout }: Props) {
               <div style={{ fontSize: '11px', color: '#B4AFA9', marginTop: '1px' }}>としてログイン中</div>
             </div>
 
-            {/* 更新通知 */}
+            {/* 通知設定 */}
             {pushSupported && (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', borderBottom: '1px solid #f5f0eb' }}>
-                <span style={{ fontSize: '13px', color: '#1A1A1A' }}>更新通知</span>
-                <button disabled={pushLoading} onClick={pushSubscribed ? pushDisable : pushEnable}
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: pushLoading ? 'wait' : 'pointer', padding: 0 }}>
-                  <span style={{ fontSize: '11px', color: pushSubscribed ? '#639922' : '#B4AFA9', fontWeight: 600 }}>{pushSubscribed ? 'オン' : 'オフ'}</span>
-                  <div style={{ width: 36, height: 20, borderRadius: 10, background: pushSubscribed ? '#639922' : '#D0CCC7', position: 'relative', transition: 'background .2s' }}>
-                    <div style={{ position: 'absolute', top: 2, left: pushSubscribed ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
-                  </div>
-                </button>
+              <div style={{ borderBottom: '1px solid #f5f0eb' }}>
+                <div style={{ padding: '8px 16px 4px', fontSize: '11px', fontWeight: 600, color: '#B4AFA9', letterSpacing: '.04em' }}>通知</div>
+                {([
+                  { key: 'morning' as const, label: '朝6時リマインダー', sub: 'タスク登録を促す通知' },
+                  { key: 'task_alert' as const, label: '期限タスク通知', sub: '開始前のアラート' },
+                ] as const).map(({ key, label, sub }) => {
+                  const on = prefs[key];
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px' }}>
+                      <div>
+                        <div style={{ fontSize: '13px', color: '#1A1A1A' }}>{label}</div>
+                        <div style={{ fontSize: '11px', color: '#B4AFA9', marginTop: '1px' }}>{sub}</div>
+                      </div>
+                      <button disabled={pushLoading || prefsLoading} onClick={() => setPref(key, !on)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: (pushLoading || prefsLoading) ? 'wait' : 'pointer', padding: 0, flexShrink: 0 }}>
+                        <span style={{ fontSize: '11px', color: on ? '#639922' : '#B4AFA9', fontWeight: 600 }}>{on ? 'オン' : 'オフ'}</span>
+                        <div style={{ width: 36, height: 20, borderRadius: 10, background: on ? '#639922' : '#D0CCC7', position: 'relative', transition: 'background .2s' }}>
+                          <div style={{ position: 'absolute', top: 2, left: on ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left .2s', boxShadow: '0 1px 3px rgba(0,0,0,.2)' }} />
+                        </div>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
