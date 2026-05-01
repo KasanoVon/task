@@ -352,7 +352,7 @@ export function TaskModal({ onClose, task }: Props) {
                             </div>
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>時間帯</span>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>開始・終了</span>
                             <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>{rtime}</button>
                             <span style={{ fontSize: '12px', color: 'var(--t2)' }}>〜</span>
                             <button type="button" onClick={() => setRepeatEndTimePickerOpen(true)} style={pickerBtn}>
