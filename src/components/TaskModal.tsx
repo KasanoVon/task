@@ -26,7 +26,18 @@ function today() {
 }
 
 const ALERT_LABELS: Record<number, string> = { 5: '5分前', 15: '15分前', 30: '30分前', 60: '1時間前' };
-const RUNIT_JP: Record<string, string> = { hour: '時間ごと', day: '日ごと', week: '週ごと', month: '月ごと' };
+const RUNIT_UNIT: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
+
+function repeatSummary(runit: string, rnum: number, rtime: string, wdays: number[]): string {
+  const unit = RUNIT_UNIT[runit] ?? runit;
+  const base = rnum === 1 ? `毎${unit}` : `${rnum}${unit}ごと`;
+  if (runit === 'week' && wdays.length > 0) {
+    const dayStr = [...wdays].sort((a, b) => a - b).map(d => WDAYS_JP[d]).join('・');
+    return `${base}（${dayStr}） ${rtime}`;
+  }
+  if (runit === 'hour') return `${base}、${rtime} 〜`;
+  return `${base} ${rtime}`;
+}
 
 function calcTimedDur(start: string, end: string): number {
     const [sh, sm] = start.split(':').map(Number);
@@ -284,18 +295,19 @@ export function TaskModal({ onClose, task }: Props) {
                 {/* 定期繰り返し */}
                 {ftype === 'repeat' && (
                     <div className="ef open" style={{ gap: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>繰り返し</span>
-                            <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>{RUNIT_JP[runit] ?? runit}</button>
                             <input
                                 type="number"
                                 value={rnum}
                                 min={1}
                                 max={99}
-                                style={{ maxWidth: '52px', fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', outline: 'none' }}
+                                style={{ width: '48px', fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', outline: 'none', textAlign: 'center' }}
                                 onChange={e => setRnum(parseInt(e.target.value) || 1)}
                             />
-                            <span style={{ fontSize: '12px', color: 'var(--t2)' }}>回</span>
+                            <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>
+                                {RUNIT_UNIT[runit] ?? runit}ごと
+                            </button>
                         </div>
                         {runit === 'week' && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -314,7 +326,7 @@ export function TaskModal({ onClose, task }: Props) {
                             </div>
                         )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>通知時刻</span>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>実施時刻</span>
                             <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>{rtime}</button>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -340,6 +352,9 @@ export function TaskModal({ onClose, task }: Props) {
                                     なし
                                 </button>
                             )}
+                        </div>
+                        <div style={{ paddingLeft: '78px', fontSize: '11px', color: 'var(--t3)', lineHeight: 1.4 }}>
+                            {repeatSummary(runit, rnum, rtime, wdays)}
                         </div>
                     </div>
                 )}
