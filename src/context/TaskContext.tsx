@@ -9,6 +9,43 @@ function todayStr() {
   return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
 }
 
+function calcNextRepeatDate(runit: string, rnum: number, wdays: number[]): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const fmt = (d: Date) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (runit === 'hour') return ''; // hourly: appear every day at rtime
+  if (runit === 'day') {
+    const next = new Date(today);
+    next.setDate(next.getDate() + rnum);
+    return fmt(next);
+  }
+  if (runit === 'week') {
+    // wdays: 0=Mon…6=Sun (app convention); JS getDay: 0=Sun…6=Sat
+    const appDay = (today.getDay() + 6) % 7;
+    if (wdays.length > 0) {
+      const sorted = [...wdays].sort((a, b) => a - b);
+      const nextInWeek = sorted.find(d => d > appDay);
+      const delta = nextInWeek !== undefined
+        ? nextInWeek - appDay
+        : 7 * rnum - appDay + sorted[0]; // wrap: jump rnum weeks then first wday
+      const next = new Date(today);
+      next.setDate(next.getDate() + delta);
+      return fmt(next);
+    }
+    const next = new Date(today);
+    next.setDate(next.getDate() + 7 * rnum);
+    return fmt(next);
+  }
+  if (runit === 'month') {
+    const next = new Date(today);
+    next.setMonth(next.getMonth() + rnum);
+    return fmt(next);
+  }
+  return '';
+}
+
 // ── 状態 ─────────────────────────────────────────────────
 
 interface TaskState {
@@ -134,10 +171,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     // 定期タスクは新しいインスタンスを作成（addTask内でdispatchされるので重複しない）
     if (task.type === 'repeat') {
+      const nextDate = calcNextRepeatDate(task.runit ?? 'day', task.rnum ?? 1, task.wdays ?? []);
       await addTask({
         name: task.name, diff: task.diff, cat: task.cat, dur: task.dur,
         type: 'repeat', runit: task.runit, rnum: task.rnum, rtime: task.rtime, wdays: task.wdays,
-        ...(task.task_date ? { task_date: task.task_date } : {}),
+        ...(nextDate ? { task_date: nextDate } : {}),
         ...(task.end_date ? { end_date: task.end_date } : {}),
       });
     }
