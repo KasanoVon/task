@@ -83,6 +83,7 @@ export function TaskModal({ onClose, task }: Props) {
     // repeat
     const [runit, setRunit] = useState(task?.runit ?? 'day');
     const [rnum, setRnum] = useState(task?.rnum ?? 1);
+    const [rnumStr, setRnumStr] = useState(String(task?.rnum ?? 1));
     const [rtime, setRtime] = useState(task?.rtime ?? '08:00');
     const [wdays, setWdays] = useState<number[]>(task?.wdays ?? []);
     const [rtimePickerOpen, setRtimePickerOpen] = useState(false);
@@ -299,11 +300,20 @@ export function TaskModal({ onClose, task }: Props) {
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>繰り返し</span>
                             <input
                                 type="number"
-                                value={rnum}
+                                value={rnumStr}
                                 min={1}
                                 max={99}
                                 style={{ width: '48px', fontSize: '12px', padding: '4px 8px', borderRadius: '6px', border: '1px solid var(--bd2)', background: 'var(--bg)', color: 'var(--t)', outline: 'none', textAlign: 'center' }}
-                                onChange={e => setRnum(parseInt(e.target.value) || 1)}
+                                onChange={e => {
+                                    setRnumStr(e.target.value);
+                                    const n = parseInt(e.target.value);
+                                    if (n >= 1) setRnum(n);
+                                }}
+                                onBlur={() => {
+                                    const n = Math.max(1, Math.min(99, parseInt(rnumStr) || 1));
+                                    setRnum(n);
+                                    setRnumStr(String(n));
+                                }}
                             />
                             <button type="button" onClick={() => setRunitPickerOpen(true)} style={pickerBtn}>
                                 {RUNIT_UNIT[runit] ?? runit}ごと
