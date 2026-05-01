@@ -28,15 +28,16 @@ function today() {
 const ALERT_LABELS: Record<number, string> = { 5: '5分前', 15: '15分前', 30: '30分前', 60: '1時間前' };
 const RUNIT_UNIT: Record<string, string> = { hour: '時間', day: '日', week: '週', month: 'ヶ月' };
 
-function repeatSummary(runit: string, rnum: number, rtime: string, wdays: number[]): string {
+function repeatSummary(runit: string, rnum: number, rtime: string, wdays: number[], endTime?: string): string {
   const unit = RUNIT_UNIT[runit] ?? runit;
   const base = rnum === 1 ? `毎${unit}` : `${rnum}${unit}ごと`;
+  const timeStr = endTime ? `${rtime}〜${endTime}` : rtime;
   if (runit === 'week' && wdays.length > 0) {
     const dayStr = [...wdays].sort((a, b) => a - b).map(d => WDAYS_JP[d]).join('・');
-    return `${base}（${dayStr}） ${rtime}`;
+    return `${base}（${dayStr}） ${timeStr}`;
   }
-  if (runit === 'hour') return `${base}、${rtime} 〜`;
-  return `${base} ${rtime}`;
+  if (runit === 'hour') return `${base}、${timeStr}`;
+  return `${base} ${timeStr}`;
 }
 
 function calcTimedDur(start: string, end: string): number {
@@ -92,6 +93,8 @@ export function TaskModal({ onClose, task }: Props) {
     const [repeatDatePickerOpen, setRepeatDatePickerOpen] = useState(false);
     const [repeatEndDate, setRepeatEndDate] = useState((task?.type === 'repeat' ? task?.end_date : undefined) ?? '');
     const [repeatEndDatePickerOpen, setRepeatEndDatePickerOpen] = useState(false);
+    const [repeatEndTime, setRepeatEndTime] = useState((task?.type === 'repeat' ? task?.end_time : undefined) ?? '');
+    const [repeatEndTimePickerOpen, setRepeatEndTimePickerOpen] = useState(false);
 
     function toggleWday(d: number) {
         setWdays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
@@ -110,7 +113,12 @@ export function TaskModal({ onClose, task }: Props) {
         if (ftype === 'timed') {
             body = { ...base, dur: calcTimedDur(startTime, endTime), type: 'timed', task_date: taskDate || today(), start_time: startTime, end_time: endTime, alert_min: alertMin };
         } else if (ftype === 'repeat') {
-            body = { ...base, type: 'repeat', runit, rnum, rtime, wdays, ...(repeatDate ? { task_date: repeatDate } : {}), ...(repeatEndDate ? { end_date: repeatEndDate } : { end_date: undefined }) };
+            const repeatDur = repeatEndTime ? calcTimedDur(rtime, repeatEndTime) : base.dur;
+            body = { ...base, dur: repeatDur, type: 'repeat', runit, rnum, rtime, wdays,
+                start_time: rtime,
+                ...(repeatEndTime ? { end_time: repeatEndTime } : { end_time: undefined }),
+                ...(repeatDate ? { task_date: repeatDate } : {}),
+                ...(repeatEndDate ? { end_date: repeatEndDate } : { end_date: undefined }) };
         } else if (ftype === 'stock') {
             body = { ...base, type: 'stock' };
         } else {
@@ -205,9 +213,17 @@ export function TaskModal({ onClose, task }: Props) {
         {rtimePickerOpen && (
             <TimePicker
                 value={rtime}
-                title="通知時刻"
+                title="開始時刻"
                 onConfirm={v => { setRtime(v); setRtimePickerOpen(false); }}
                 onCancel={() => setRtimePickerOpen(false)}
+            />
+        )}
+        {repeatEndTimePickerOpen && (
+            <TimePicker
+                value={repeatEndTime || rtime}
+                title="終了時刻"
+                onConfirm={v => { setRepeatEndTime(v); setRepeatEndTimePickerOpen(false); }}
+                onCancel={() => setRepeatEndTimePickerOpen(false)}
             />
         )}
         {runitPickerOpen && (
@@ -335,9 +351,19 @@ export function TaskModal({ onClose, task }: Props) {
                                 </div>
                             </div>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>実施時刻</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>時間帯</span>
                             <button type="button" onClick={() => setRtimePickerOpen(true)} style={pickerBtn}>{rtime}</button>
+                            <span style={{ fontSize: '12px', color: 'var(--t2)' }}>〜</span>
+                            <button type="button" onClick={() => setRepeatEndTimePickerOpen(true)} style={pickerBtn}>
+                                {repeatEndTime || '終了なし'}
+                            </button>
+                            {repeatEndTime && (
+                                <button type="button" onClick={() => setRepeatEndTime('')}
+                                    style={{ fontSize: '11px', color: 'var(--t3)', background: 'none', border: '0.5px solid var(--bd2)', borderRadius: '999px', padding: '3px 8px', cursor: 'pointer' }}>
+                                    なし
+                                </button>
+                            )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <span className="flbl" style={{ minWidth: '68px', marginBottom: 0 }}>開始日</span>
@@ -364,7 +390,7 @@ export function TaskModal({ onClose, task }: Props) {
                             )}
                         </div>
                         <div style={{ paddingLeft: '78px', fontSize: '11px', color: 'var(--t3)', lineHeight: 1.4 }}>
-                            {repeatSummary(runit, rnum, rtime, wdays)}
+                            {repeatSummary(runit, rnum, rtime, wdays, repeatEndTime || undefined)}
                         </div>
                     </div>
                 )}
