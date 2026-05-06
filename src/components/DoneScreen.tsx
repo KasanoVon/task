@@ -202,7 +202,7 @@ export function DoneScreen({ onShowFocus, onShowList, onShowCal }: Props) {
             const text = logs.length > 0
               ? `今日は${logs.length}個のタスクを完了！${streak >= 3 ? `🔥${streak}日連続中` : streak > 0 ? `${streak}日連続中` : '今日からスタート'} #TaskVon`
               : `今日もタスク管理がんばります💪 #TaskVon`;
-            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent('https://taskvon.up.railway.app')}`, '_blank');
+            window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.origin)}`, '_blank');
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ verticalAlign: 'middle', marginRight: '6px' }}><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.738-8.835L1.254 2.25H8.08l4.253 5.622 5.911-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             Xでシェア

@@ -1063,6 +1063,48 @@ setInterval(async () => {
         url: '/',
       });
     }
+    // ── 定期タスクの実施時刻通知 ─────────────────────
+    // 今日の曜日（アプリ規則: 0=月〜6=日）
+    const jstDay = nowJST.getUTCDay(); // 0=日, 1=月, ..., 6=土
+    const todayAppDay = jstDay === 0 ? 6 : jstDay - 1;
+
+    const repeatAlertRows = await db.all(`
+      SELECT ps.user_id, ps.subscription_json,
+             t.id AS task_id, t.name, t.rtime, COALESCE(t.alert_min, 30) AS alert_min,
+             t.runit, t.wdays
+      FROM push_subscriptions ps
+      JOIN tasks t ON t.user_id = ps.user_id
+      LEFT JOIN user_push_prefs upp ON upp.user_id = ps.user_id
+      WHERE t.type = 'repeat'
+        AND t.done = 0
+        AND t.rtime IS NOT NULL
+        AND (t.task_date IS NULL OR t.task_date <= ?)
+        AND (t.end_date IS NULL OR t.end_date >= ?)
+        AND COALESCE(upp.task_alert, 1) = 1
+    `, todayStr, todayStr);
+
+    for (const row of repeatAlertRows) {
+      if (row.runit === 'month') continue; // 月次は日付計算が複雑なのでスキップ
+      if (row.runit === 'week') {
+        let wdaysArr = [];
+        try { wdaysArr = JSON.parse(row.wdays || '[]'); } catch { continue; }
+        if (!wdaysArr.includes(todayAppDay)) continue;
+      }
+      const [rh, rm] = row.rtime.split(':').map(Number);
+      const diff = (rh * 60 + rm) - currentMin;
+      if (diff <= 0 || diff > row.alert_min) continue;
+
+      const key = `repeat:${row.user_id}:${row.task_id}:${todayStr}:${row.rtime}`;
+      if (notifiedKeys.has(key)) continue;
+      notifiedKeys.add(key);
+
+      await sendPush(row.user_id, row.subscription_json, {
+        title: row.name,
+        body: `${diff}分後に開始します（${row.rtime}〜）`,
+        icon: '/favicon.svg',
+        url: '/',
+      });
+    }
   } catch (e) {
     console.error('push check error:', e);
   }

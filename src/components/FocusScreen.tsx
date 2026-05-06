@@ -136,6 +136,19 @@ export function FocusScreen({ username, onLogout, onShowList: _onShowList, onSho
     }
   }, [nextRepeat, nextRepeatRtime]);
 
+  // タスク削除後に残る stale な localStorage ID をクリーンアップ
+  useEffect(() => {
+    if (!state.loaded) return;
+    if (focusRepeatId != null && !tasks.find(t => t.id === focusRepeatId)) {
+      setFocusRepeatId(null); localStorage.removeItem('focusRepeatId');
+    }
+    if (nextRepeatId != null && !tasks.find(t => t.id === nextRepeatId)) {
+      setNextRepeatId(null); localStorage.removeItem('nextRepeatId');
+      setNextRepeatRtime(null); localStorage.removeItem('nextRepeatRtime');
+      setNextRepeatTriggerId(null); localStorage.removeItem('nextRepeatTriggerId');
+    }
+  }, [state.loaded, tasks]);
+
   const todayStr = today();
 
   // ListScreenと同じフィルター
