@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { usePush } from '../hooks/usePush';
+import { ClaudeLinkModal } from './ClaudeLinkModal';
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? '';
 
@@ -94,6 +95,7 @@ export function UserMenu({ username, onLogout }: Props) {
   const { supported: pushSupported, loading: pushLoading, prefs, prefsLoading, setPref } = usePush();
   const [menuOpen, setMenuOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [claudeOpen, setClaudeOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -116,6 +118,7 @@ export function UserMenu({ username, onLogout }: Props) {
   return (
     <>
       {accountOpen && <AccountModal onClose={() => setAccountOpen(false)} />}
+      {claudeOpen && <ClaudeLinkModal onClose={() => setClaudeOpen(false)} />}
 
       <div ref={menuRef} style={{ position: 'relative' }}>
         {/* トリガー */}
@@ -175,6 +178,14 @@ export function UserMenu({ username, onLogout }: Props) {
                 <path d="M8 2v8M5 7l3 3 3-3"/><path d="M3 13h10"/>
               </svg>
               CSV エクスポート
+            </button>
+
+            {/* Claude 連携 */}
+            <button onClick={() => { setMenuOpen(false); setClaudeOpen(true); }} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '11px 16px', background: 'none', border: 'none', borderBottom: '1px solid #f5f0eb', fontSize: '13px', color: '#1A1A1A', cursor: 'pointer', textAlign: 'left' }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#8C7B6E" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6.5 9.5l3-3"/><path d="M7 4.5l1-1a2.5 2.5 0 0 1 3.5 3.5l-1 1"/><path d="M9 11.5l-1 1a2.5 2.5 0 0 1-3.5-3.5l1-1"/>
+              </svg>
+              Claude 連携
             </button>
 
             {/* アカウント設定 */}
