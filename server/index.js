@@ -148,14 +148,6 @@ await client.executeMultiple(`
     value TEXT NOT NULL
   );
 
-  CREATE TABLE IF NOT EXISTS api_keys (
-    user_id      TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    key_hash     TEXT NOT NULL UNIQUE,
-    key_prefix   TEXT NOT NULL,
-    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
-    last_used_at TEXT
-  );
-
 `);
 
 
@@ -976,114 +968,6 @@ app.patch('/api/push/prefs', requireAuth, async (req, res) => {
     }
     const row = await db.get('SELECT morning, task_alert FROM user_push_prefs WHERE user_id = ?', req.user.id);
     return res.json({ morning: Boolean(row.morning), task_alert: Boolean(row.task_alert) });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'server_error' });
-  }
-});
-
-// ── 外部連携 API（Claude のスケジュールタスク等から読み取り専用で利用） ──
-
-const externalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 60,
-  message: { error: 'too_many_requests' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-function hashApiKey(key) {
-  return crypto.createHash('sha256').update(key).digest('hex');
-}
-
-app.get('/api/external/key', requireAuth, async (req, res) => {
-  try {
-    const row = await db.get('SELECT key_prefix, created_at, last_used_at FROM api_keys WHERE user_id = ?', req.user.id);
-    if (!row) return res.json({ exists: false });
-    return res.json({ exists: true, prefix: row.key_prefix, created_at: row.created_at, last_used_at: row.last_used_at });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'server_error' });
-  }
-});
-
-app.post('/api/external/key', requireAuth, async (req, res) => {
-  try {
-    const key = 'tvk_' + crypto.randomBytes(32).toString('hex');
-    const prefix = key.slice(0, 10);
-    await db.run(
-      `INSERT INTO api_keys (user_id, key_hash, key_prefix, created_at, last_used_at)
-       VALUES (?, ?, ?, datetime('now'), NULL)
-       ON CONFLICT(user_id) DO UPDATE SET
-         key_hash = excluded.key_hash, key_prefix = excluded.key_prefix,
-         created_at = excluded.created_at, last_used_at = NULL`,
-      req.user.id, hashApiKey(key), prefix
-    );
-    return res.json({ key, prefix });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'server_error' });
-  }
-});
-
-app.delete('/api/external/key', requireAuth, async (req, res) => {
-  try {
-    await db.run('DELETE FROM api_keys WHERE user_id = ?', req.user.id);
-    return res.status(204).end();
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: 'server_error' });
-  }
-});
-
-async function requireApiKey(req, res, next) {
-  const header = req.headers.authorization ?? '';
-  const key = header.startsWith('Bearer ') ? header.slice(7).trim() : '';
-  if (!key.startsWith('tvk_')) return res.status(401).json({ error: 'unauthorized' });
-  const row = await db.get('SELECT user_id FROM api_keys WHERE key_hash = ?', hashApiKey(key));
-  if (!row) return res.status(401).json({ error: 'unauthorized' });
-  await db.run(`UPDATE api_keys SET last_used_at = datetime('now') WHERE user_id = ?`, row.user_id);
-  req.apiUserId = row.user_id;
-  next();
-}
-
-// 今日の未完了タスク（リスト画面と同じ抽出条件）
-app.get('/api/external/today', externalLimiter, requireApiKey, async (req, res) => {
-  try {
-    const td = todayJST();
-    const rows = (await db.all(
-      'SELECT * FROM tasks WHERE user_id = ? ORDER BY sort_order ASC, id ASC', req.apiUserId
-    )).map(parseTask);
-
-    const pending = rows.filter(t => {
-      if (t.done || t.type === 'stock') return false;
-      if (t.type === 'timed') return (t.task_date ?? '') <= td;
-      if (t.type === 'repeat') {
-        if (t.task_date && t.task_date > td) return false;
-        if (t.end_date && t.end_date < td) return false;
-        if (rows.some(o => o.id !== t.id && o.type === 'repeat' && o.done && o.name === t.name && o.rtime === t.rtime)) return false;
-        return !rows.some(o => o.id < t.id && o.type === 'repeat' && !o.done && o.name === t.name && o.rtime === t.rtime);
-      }
-      return !t.task_date || t.task_date === td;
-    });
-
-    const tasks = pending.map(t => {
-      const start = t.type === 'repeat' ? (t.start_time ?? t.rtime ?? null) : (t.start_time ?? null);
-      return {
-        name: t.name,
-        type: t.type,
-        start_time: start,
-        end_time: t.end_time ?? null,
-        dur: t.dur,
-        cat: t.cat,
-        overdue: t.type === 'timed' && (t.task_date ?? '') < td,
-      };
-    }).sort((a, b) => (a.start_time ?? '99:99').localeCompare(b.start_time ?? '99:99'));
-
-    const done = await db.get(
-      'SELECT COUNT(*) AS c FROM daily_logs WHERE user_id = ? AND log_date = ? AND done = 1', req.apiUserId, td
-    );
-    return res.json({ date: td, tasks, done_count: done?.c ?? 0 });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ error: 'server_error' });
